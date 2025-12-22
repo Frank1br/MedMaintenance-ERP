@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  # Servidor Web (Nginx)
+  web:
+    image: nginx:alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./:/var/www/html
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - app
+    networks:
+      - med_net
+
+  # Aplicação PHP (Adianti)
+  app:
+    build: .
+    volumes:
+      - ./:/var/www/html
+    networks:
+      - med_net
+
+  # Banco de Dados (PostgreSQL)
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: med_maintenance
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: root_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - med_net
+
+  # Adminer (Interface visual leve para o Banco - opcional, mas útil)
+  adminer:
+    image: adminer
+    ports:
+      - "8081:8080"
+    networks:
+      - med_net
+
+networks:
+  med_net:
+    driver: bridge
+
+volumes:
+  pgdata:
