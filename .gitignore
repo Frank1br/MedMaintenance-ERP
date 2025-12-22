@@ -1,0 +1,83 @@
+# OS Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+*~
+
+# IDE Files
+.idea/
+.vscode/
+*.swp
+*.swo
+*.sublime-project
+*.sublime-workspace
+.phpintel/
+*.code-workspace
+
+# PHP & Composer
+/vendor/
+composer.phar
+.phpunit.result.cache
+phpunit.xml
+
+# Environment & Config
+.env
+.env.local
+.env.*.local
+config.php
+config-local.php
+
+# Logs
+*.log
+/tmp/*.log
+/tmp/*.txt
+/logs/
+
+# Cache & Temporary Files
+/tmp/*
+!/tmp/.gitkeep
+/cache/
+*.cache
+
+# File Uploads
+/files/uploads/*
+!/files/uploads/.gitkeep
+/files/temp/*
+!/files/temp/.gitkeep
+
+# Docker
+docker-compose.override.yml
+.docker/
+
+# Database
+*.sql
+*.sqlite
+*.db
+
+# Backup Files
+*.bak
+*.backup
+*.old
+*~
+
+# Build & Distribution
+/dist/
+/build/
+
+# Package Managers
+node_modules/
+npm-debug.log
+yarn-error.log
+package-lock.json
+yarn.lock
+
+# Security
+*.pem
+*.key
+*.crt
+/secrets/
+credentials.json
