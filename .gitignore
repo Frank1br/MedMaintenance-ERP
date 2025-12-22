@@ -1,0 +1,121 @@
+# macOS / OS Files
+.DS_Store
+.DS_Store?
+.AppleDouble
+.LSOverride
+._*
+
+# Files that might appear in the root of a volume
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Directories potentially created on remote AFP share
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+*~
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+*.sublime-project
+*.sublime-workspace
+.phpintel/
+*.code-workspace
+.project
+.settings/
+.buildpath
+
+# NetBeans
+nbproject/
+nbbuild/
+dist/
+nbdist/
+.nb-gradle/
+
+# PHP & Composer
+/vendor/
+composer.phar
+.phpunit.result.cache
+phpunit.xml
+
+# Environment & Config
+.env
+.env.local
+.env.*.local
+config.php
+config-local.php
+
+# Logs
+*.log
+/tmp/*.log
+/tmp/*.txt
+/logs/
+/app/output/*.log
+error_log
+debug.log
+
+# Cache & Temporary Files
+/tmp/*
+!/tmp/.gitkeep
+/cache/
+/app/cache/*
+!/app/cache/.gitkeep
+*.cache
+
+# File Uploads
+/files/uploads/*
+!/files/uploads/.gitkeep
+/files/temp/*
+!/files/temp/.gitkeep
+/files/system/*
+!/files/system/.gitkeep
+
+# Docker
+docker-compose.override.yml
+.docker/
+
+# Database
+*.sql
+*.sqlite
+*.db
+
+# Backup Files
+*.bak
+*.backup
+*.old
+
+# Build & Distribution
+/dist/
+/build/
+
+# Package Managers
+node_modules/
+npm-debug.log
+yarn-error.log
+package-lock.json
+yarn.lock
+
+# Security
+*.pem
+*.key
+*.crt
+/secrets/
+credentials.json
+
+# Configuration files (uncomment if you want to ignore local configs)
+# /app/config/*.php
