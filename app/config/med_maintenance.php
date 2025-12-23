@@ -1,7 +1,7 @@
 <?php
 return [
     'host'  => "127.0.0.1",
-    'port'  => "5432",
+    'port'  => "5433",
     'name'  => "med_maintenance",
     'user'  => "admin",
     'pass'  => "root_password",
