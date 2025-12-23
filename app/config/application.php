@@ -47,9 +47,8 @@ return [
         ],
         'user_register' => '1',
         'reset_password' => '1',
-        'default_groups' => '2',
-        // --- AQUI ESTÁ A MÁGICA: Trocamos '30' pelo nome do seu Dashboard ---
-        'default_screen' => 'MaintenanceDashboard', 
+        'default_groups' => '4',  
+        'default_screen' => '70', 
         'default_units' => '1',
     ],
     'highlight' => [

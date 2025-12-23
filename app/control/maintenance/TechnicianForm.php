@@ -1,8 +1,8 @@
 <?php
 /**
  * TechnicianForm
+ *
  * Cadastro de Técnicos
- * @author Tech Lead (Gemini)
  */
 class TechnicianForm extends TPage
 {
@@ -12,98 +12,119 @@ class TechnicianForm extends TPage
     {
         parent::__construct();
 
+        // Cria o formulário usando Bootstrap
         $this->form = new BootstrapFormBuilder('form_Technician');
         $this->form->setFormTitle('Cadastro de Técnico');
 
-        // --- Campos ---
+        // Criação dos campos
         $id = new TEntry('id');
         $name = new TEntry('name');
         $email = new TEntry('email');
         $phone = new TEntry('phone');
-        $specialty = new TEntry('specialty');
         
+        // Campo Radio para Ativo/Inativo
         $active = new TRadioGroup('active');
         $active->addItems(['Y' => 'Sim', 'N' => 'Não']);
         $active->setLayout('horizontal');
-        $active->setValue('Y'); // Padrão Ativo
+        $active->setValue('Y'); // Padrão é Sim
 
-        // --- Validações ---
-        $name->addValidation('Nome', new TRequiredValidator);
-        $email->addValidation('Email', new TEmailValidator); 
+        // Campo de Vínculo com Usuário do Sistema
+        // Parâmetros: nome_campo, banco_busca, model_busca, campo_chave, campo_exibicao
+        $system_user_id = new TDBCombo('system_user_id', 'permission', 'SystemUser', 'id', 'name');
+        $system_user_id->enableSearch(); // Permite digitar para pesquisar na lista
+        $system_user_id->setTip('Selecione qual usuário de login corresponde a este técnico');
 
-        // --- Configurações Visuais ---
-        $id->setEditable(false);
-        $name->forceUpperCase();
-        
-        // --- Layout (AGORA CORRIGIDO) ---
-        $this->form->addFields([new TLabel('ID')], [$id])->layout = ['col-sm-2', 'col-sm-10'];
-        
-        $this->form->addFields([new TLabel('Nome Completo*')], [$name]); // Ocupa a linha toda
-        
-        // CORREÇÃO AQUI: Note que Label e Input estão dentro do mesmo []
-        $this->form->addFields(
-            [new TLabel('Email'), $email],
-            [new TLabel('Telefone'), $phone]
-        )->layout = ['col-sm-6', 'col-sm-6']; // Divide meio a meio
-        
-        // CORREÇÃO AQUI TAMBÉM
-        $this->form->addFields(
-            [new TLabel('Especialidade'), $specialty],
-            [new TLabel('Ativo?'), $active]
-        )->layout = ['col-sm-8', 'col-sm-4'];
+        // Propriedades dos campos
+        $id->setEditable(FALSE);
+        $id->setSize('20%');
+        $name->setSize('100%');
+        $email->setSize('100%');
+        $system_user_id->setSize('100%');
 
-        // --- Botões ---
-        $this->form->addAction('Salvar', new TAction([$this, 'onSave']), 'fa:save white')->addStyleClass('btn-primary');
+        // Adiciona os campos ao formulário (Layout)
+        $this->form->addFields( [new TLabel('ID')], [$id] );
+        $this->form->addFields( [new TLabel('Nome Completo')], [$name] );
+        $this->form->addFields( [new TLabel('Email')], [$email] );
+        $this->form->addFields( [new TLabel('Telefone')], [$phone] );
+        
+        // Adiciona o novo campo de Login
+        $this->form->addFields( [new TLabel('Login de Acesso (Vínculo)')], [$system_user_id] );
+        
+        $this->form->addFields( [new TLabel('Ativo?')], [$active] );
+
+        // Ações do formulário (Botões)
+        $this->form->addAction('Salvar', new TAction([$this, 'onSave']), 'fa:save green');
         $this->form->addAction('Limpar', new TAction([$this, 'onClear']), 'fa:eraser red');
         $this->form->addAction('Voltar', new TAction(['TechnicianList', 'onReload']), 'fa:arrow-left');
 
+        // Container visual
         $vbox = new TVBox;
         $vbox->style = 'width: 100%';
+        $vbox->add(new TXMLBreadCrumb('menu.xml', 'TechnicianList'));
         $vbox->add($this->form);
+
         parent::add($vbox);
     }
 
-    public function onSave($param = null)
+    /**
+     * Salva os dados
+     */
+    public function onSave()
     {
-        try {
-            TTransaction::open('med_maintenance');
-            $this->form->validate();
+        try
+        {
+            TTransaction::open('med_maintenance'); // Abre a transação
             
-            $object = new Technician();
+            $this->form->validate(); // Valida o formulário
             
-            // CORREÇÃO AQUI: Adicionado (array) antes de $this->form->getData()
-            $object->fromArray( (array) $this->form->getData() );
+            $data = $this->form->getData(); // Pega os dados do form
             
-            $object->store();
+            $object = new Technician; 
+            $object->fromArray( (array) $data); // Preenche o objeto
             
-            $this->form->setData($object);
-            TTransaction::close();
+            $object->store(); // Salva no banco
             
-            new TMessage('info', 'Técnico salvo com sucesso!');
-        } catch (Exception $e) {
+            $this->form->setData($object); // Mantém os dados na tela
+            
+            TTransaction::close(); // Fecha transação
+            
+            new TMessage('info', 'Registro salvo com sucesso');
+        }
+        catch (Exception $e) // Em caso de erro
+        {
+            new TMessage('error', $e->getMessage());
+            TTransaction::rollback();
+        }
+    }
+
+    /**
+     * Carrega os dados para editar
+     */
+    public function onEdit($param)
+    {
+        try
+        {
+            if (isset($param['key']))
+            {
+                $key = $param['key'];  // Obtém a chave
+                TTransaction::open('med_maintenance');
+                $object = new Technician($key); // Carrega o objeto
+                $this->form->setData($object); // Joga os dados no formulário
+                TTransaction::close();
+            }
+        }
+        catch (Exception $e)
+        {
             new TMessage('error', $e->getMessage());
             TTransaction::rollback();
         }
     }
     
-    public function onEdit($param)
-    {
-        try {
-            if (isset($param['key'])) {
-                TTransaction::open('med_maintenance');
-                $object = new Technician($param['key']);
-                $this->form->setData($object);
-                TTransaction::close();
-            }
-        } catch (Exception $e) {
-            new TMessage('error', $e->getMessage());
-            TTransaction::rollback();
-        }
-    }
-
+    /**
+     * Limpa o formulário
+     */
     public function onClear($param)
     {
         $this->form->clear(true);
     }
 }
-?>

@@ -1,9 +1,6 @@
 <menu>
-    <menuitem>
-      <icon>fas:user-plus fa-fw</icon>
-      <action>SystemRegistrationForm</action>
-      <title>_t{Create account}</title>
-      <label>_t{Create account}</label>
-      <mobile>Y</mobile>
+    <menuitem label='Entrar'>
+        <action>LoginForm</action>
+        <icon>fas:sign-in-alt fa-fw</icon>
     </menuitem>
 </menu>

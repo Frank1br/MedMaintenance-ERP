@@ -1,106 +1,80 @@
 <menu>
-    <menuitem label='_t{Administration}'>
-        <icon>fas:sliders fa-fw</icon>
+    <menuitem label='Dashboard'>
+        <icon>fas:tachometer-alt fa-fw</icon>
+        <action>MaintenanceDashboard</action>
+    </menuitem>
+
+    <menuitem label='Operacional'>
+        <icon>fas:wrench fa-fw</icon>
         <menu>
-              <menuitem label='Dashboard'>
-                  <icon>fas:tachometer-alt fa-fw</icon>
-                  <action>SystemAdministrationDashboard</action>
-              </menuitem>
-              <menuitem label='_t{Programs}'>
-                  <icon>far:file-code fa-fw</icon>
-                  <action>SystemProgramList</action>
-              </menuitem>
-              <menuitem label='_t{Groups}'>
-                  <icon>fas:users fa-fw</icon>
-                  <action>SystemGroupList</action>
-              </menuitem>
-              <menuitem label='_t{Units}'>
-                  <icon>fas:university fa-fw</icon>
-                  <action>SystemUnitList</action>
-              </menuitem>
-              <menuitem label='_t{Roles}'>
-                  <icon>fas:user-tag fa-fw</icon>
-                  <action>SystemRoleList</action>
-              </menuitem>
-              <menuitem label='_t{Users}'>
-                  <icon>fas:user fa-fw</icon>
-                  <action>SystemUserList</action>
-              </menuitem>
-              <menuitem label='_t{Page management}'>
-                    <icon>fab:wikipedia-w fa-fw</icon>
-                    <action>SystemWikiList</action>
-              </menuitem>
-              <menuitem label='_t{News management}'>
-                    <icon>fas:pen-square fa-fw</icon>
-                    <action>SystemPostList</action>
-              </menuitem>
-              <menuitem label='_t{Schedules}'>
-                  <icon>fas:clock fa-fw</icon>
-                  <action>SystemScheduleList#method=onReload</action>
-              </menuitem>
-              <menuitem label='_t{Preferences}'>
+            <menuitem label='Ordens de Serviço'>
+                <icon>fas:file-medical-alt fa-fw</icon>
+                <action>MaintenanceOrderList</action>
+            </menuitem>
+            <menuitem label='Histórico Geral'>
+                <icon>fas:history fa-fw</icon>
+                <action>AssetList</action>
+            </menuitem>
+        </menu>
+    </menuitem>
+
+    <menuitem label='Inventário'>
+        <icon>fas:cubes fa-fw</icon>
+        <menu>
+            <menuitem label='Equipamentos'>
+                <icon>fas:stethoscope fa-fw</icon>
+                <action>AssetList</action>
+            </menuitem>
+            <menuitem label='Categorias'>
+                <icon>fas:tags fa-fw</icon>
+                <action>SystemPage</action> </menuitem>
+        </menu>
+    </menuitem>
+
+    <menuitem label='Equipe'>
+        <icon>fas:users fa-fw</icon>
+        <menu>
+            <menuitem label='Técnicos'>
+                <icon>fas:user-md fa-fw</icon>
+                <action>TechnicianList</action>
+            </menuitem>
+        </menu>
+    </menuitem>
+
+    <menuitem label='Configurações'>
+        <icon>fas:cogs fa-fw</icon>
+        <menu>
+            <menuitem label='Usuários'>
+                <icon>fas:user fa-fw</icon>
+                <action>SystemUserList</action>
+            </menuitem>
+            <menuitem label='Grupos'>
+                <icon>fas:users-cog fa-fw</icon>
+                <action>SystemGroupList</action>
+            </menuitem>
+
+            <menuitem label='Unidades'>
+                <icon>fas:university fa-fw</icon>
+                <action>SystemUnitList</action>
+            </menuitem>
+
+            
+            <menuitem label='Programas'>
+                <icon>far:file-code fa-fw</icon>
+                <action>SystemProgramList</action>
+            </menuitem>
+            <menuitem label='Logs de Acesso'>
+                <icon>fas:key fa-fw</icon>
+                <action>SystemAccessLogList</action>
+            </menuitem>
+             <menuitem label='Preferências'>
                   <icon>fas:cog fa-fw</icon>
                   <action>SystemPreferenceForm#method=onEdit</action>
               </menuitem>
         </menu>
     </menuitem>
     
-    <menuitem label='Logs'>
-        <icon>fas:desktop fa-fw</icon>
-        <menu>
-              <menuitem label='Dashboard'>
-                  <icon>fas:tachometer-alt fa-fw</icon>
-                  <action>SystemLogDashboard</action>
-              </menuitem>
-              <menuitem label='_t{Access Log}'>
-                  <icon>fas:key fa-fw</icon>
-                  <action>SystemAccessLogList</action>
-              </menuitem>
-              <menuitem label='_t{Change Log}'>
-                  <icon>fas:film fa-fw</icon>
-                  <action>SystemChangeLogView</action>
-              </menuitem>
-              <menuitem label='_t{SQL Log}'>
-                  <icon>fas:database fa-fw</icon>
-                  <action>SystemSqlLogList</action>
-              </menuitem>
-              <menuitem label='_t{Request Log}'>
-                  <icon>fas:globe fa-fw</icon>
-                  <action>SystemRequestLogList</action>
-              </menuitem>
-              <menuitem label='_t{Schedules}'>
-                  <icon>fas:clock fa-fw</icon>
-                  <action>SystemScheduleLogList</action>
-              </menuitem>
-              <menuitem label='_t{PHP Log}'>
-                  <icon>fas:exclamation-triangle fa-fw</icon>
-                  <action>SystemPHPErrorLogView</action>
-              </menuitem>
-              <menuitem label='Session vars'>
-                  <icon>fas:code fa-fw</icon>
-                  <action>SystemSessionVarsView</action>
-              </menuitem>
-        </menu>
-    </menuitem>
-        
-    <menuitem label='Common pages'>
-        <menu>
-            <menuitem label='Common page 1'>
-                <icon></icon>
-                <action>CommonPage</action>
-            </menuitem>
-            <menuitem label='Common page 2'>
-                <icon></icon>
-                <action>CommonPage</action>
-            </menuitem>
-            <menuitem label='Common page 3'>
-                <icon></icon>
-                <action>CommonPage</action>
-            </menuitem>
-        </menu>
-    </menuitem>
-    
-    <menuitem label='Logout'>
+    <menuitem label='Sair'>
         <action>LoginForm#method=onLogout#static=1</action>
         <icon>fas:sign-out-alt fa-fw</icon>
     </menuitem>

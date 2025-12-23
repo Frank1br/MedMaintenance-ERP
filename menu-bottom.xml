@@ -1,2 +1,16 @@
 <menu>
+    <menuitem label='Dashboard'>
+        <icon>fas:tachometer-alt fa-fw</icon>
+        <action>MaintenanceDashboard</action>
+    </menuitem>
+
+    <menuitem label='Minhas OS'>
+        <icon>fas:clipboard-list fa-fw</icon>
+        <action>MaintenanceOrderList</action>
+    </menuitem>
+
+    <menuitem label='Sair'>
+        <action>LoginForm#method=onLogout#static=1</action>
+        <icon>fas:sign-out-alt fa-fw</icon>
+    </menuitem>
 </menu>

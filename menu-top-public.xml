@@ -1,9 +1,11 @@
 <menu>
-    <menuitem>
-      <icon>fas:sign-in-alt fa-fw</icon>
-      <action>LoginForm</action>
-      <title>_t{Login}</title>
-      <label>_t{Login}</label>
-      <mobile>Y</mobile>
+    <menuitem label='Entrar'>
+        <action>LoginForm</action>
+        <icon>fas:sign-in-alt fa-fw</icon>
+    </menuitem>
+    
+    <menuitem label='Recuperar Senha'>
+        <action>SystemRequestPasswordResetForm</action>
+        <icon>fas:lock fa-fw</icon>
     </menuitem>
 </menu>
