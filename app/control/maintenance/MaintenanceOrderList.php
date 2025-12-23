@@ -72,6 +72,13 @@ class MaintenanceOrderList extends TPage
         $action_del->setLabel('Excluir');
         $action_del->setImage('fa:trash red');
         $action_del->setField('id');
+
+        $action_pdf = new TDataGridAction(['MaintenanceOrderDocument', 'onGenerate']);
+        $action_pdf->setLabel('Imprimir OS');
+        $action_pdf->setImage('fas:print gray'); // Ícone de impressora
+        $action_pdf->setField('id'); // Passa o ID como parâmetro
+        $this->datagrid->addAction($action_pdf);
+        
         $this->datagrid->addAction($action_del);
 
         // ✅ A CORREÇÃO ESTÁ AQUI: Cria o modelo da grid

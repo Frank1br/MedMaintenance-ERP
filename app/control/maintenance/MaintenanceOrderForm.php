@@ -1,7 +1,7 @@
 <?php
 /**
  * MaintenanceOrderForm
- * @author Tech Lead (Gemini)
+ * Cadastro de Ordens de Serviço (Com Trava de Segurança para Técnicos)
  */
 class MaintenanceOrderForm extends TPage
 {
@@ -12,195 +12,129 @@ class MaintenanceOrderForm extends TPage
         parent::__construct();
 
         $this->form = new BootstrapFormBuilder('form_MaintenanceOrder');
-        $this->form->setFormTitle('Ordem de Serviço (OS)');
-        $this->form->setClientValidation(true);
+        $this->form->setFormTitle('Cadastro de Ordem de Serviço');
 
-        // --- Campos ---
         $id = new TEntry('id');
-        $id->setEditable(false);
-        
-        // 1. Combo de Equipamentos
         $asset_id = new TDBCombo('asset_id', 'med_maintenance', 'Asset', 'id', 'name');
-        $asset_id->enableSearch(); 
         
-        // 2. Combo de Técnicos (Apenas ativos)
-        $filter_tech = new TCriteria;
-        $filter_tech->add(new TFilter('active', '=', 'Y'));
+        // Campo Técnico (TDBCombo)
+        $technician_id = new TDBCombo('technician_id', 'med_maintenance', 'Technician', 'id', 'name');
         
-        $technician_id = new TDBCombo('technician_id', 'med_maintenance', 'Technician', 'id', 'name', 'name', $filter_tech);
-        $technician_id->enableSearch();
-        $technician_id->setProperty('placeholder', 'Selecione um técnico...');
-
-        // 3. Prioridade e Status
-        $priority = new TCombo('priority');
-        $priority->addItems([
-            'BAIXA' => '🟢 Baixa',
-            'MEDIA' => '🟡 Média',
-            'ALTA'  => '🔴 Alta',
-            'URGENTE' => '🔥 URGENTE'
-        ]);
-        $priority->setValue('MEDIA');
-
-        // Status (Leitura apenas - controlado pelos botões)
-        $status = new TEntry('status');
-        $status->setEditable(false);
-        $status->setValue('ABERTA'); // Valor padrão visual
-
         $title = new TEntry('title');
-        
-        // Descrição do Problema
         $description = new TText('description');
-        $description->setSize('100%', 80);
-        $description->setProperty('placeholder', 'Descreva o defeito detalhadamente...');
+        $priority = new TCombo('priority');
+        $status = new TCombo('status');
+        $created_at = new TDateTime('created_at');
 
-        // --- NOVIDADE: Notas de Solução ---
-        $solution_notes = new TText('solution_notes');
-        $solution_notes->setSize('100%', 80);
-        $solution_notes->setProperty('placeholder', 'Obrigatório para finalizar: O que foi feito para resolver?');
-        $solution_notes->style = "background-color: #f9fff9; border-color: #28a745"; // Destaque visual leve
+        // Opções manuais
+        $priority->addItems(['BAIXA' => 'Baixa', 'MEDIA' => 'Média', 'ALTA' => 'Alta', 'URGENTE' => 'Urgente']);
+        $status->addItems(['ABERTA' => 'Aberta', 'EM ANDAMENTO' => 'Em Andamento', 'FECHADA' => 'Fechada']);
 
-        // --- Validações ---
-        $asset_id->addValidation('Equipamento', new TRequiredValidator);
-        $title->addValidation('Título do Problema', new TRequiredValidator);
-        $description->addValidation('Descrição', new TRequiredValidator);
+        // Configurações visuais
+        $id->setEditable(FALSE);
+        $created_at->setEditable(FALSE);
+        $created_at->setMask('dd/mm/yyyy hh:ii');
+        $created_at->setDatabaseMask('yyyy-mm-dd hh:ii');
+        
+        // Define data/hora atual se for novo cadastro
+        if (empty($created_at->getValue())) {
+            $created_at->setValue(date('Y-m-d H:i'));
+        }
 
-        // --- Layout ---
-        $this->form->addFields([new TLabel('Nº OS')], [$id])->layout = ['col-sm-2', 'col-sm-10'];
-        
-        $this->form->addFields(
-            [new TLabel('Equipamento Alvo*', '#ff0000'), $asset_id],
-            [new TLabel('Status Atual'), $status]
-        )->layout = ['col-sm-8', 'col-sm-4'];
+        $id->setSize('20%');
+        $asset_id->setSize('100%');
+        $technician_id->setSize('100%');
+        $asset_id->enableSearch();
+        $technician_id->enableSearch();
 
-        $this->form->addFields(
-            [new TLabel('Técnico Responsável'), $technician_id],
-            [new TLabel('Prioridade'), $priority]
-        )->layout = ['col-sm-8', 'col-sm-4'];
-        
-        $this->form->addFields([new TLabel('Título do Problema*', '#ff0000'), $title]);
-        $this->form->addFields([new TLabel('Descrição do Defeito*', '#ff0000'), $description]);
-        
-        // Adiciona um divisor visual
-        $this->form->addContent( ['<h5 style="color:#28a745; margin-top:20px"><i class="fa fa-check-circle"></i> Encerramento Técnico</h5>'] );
-        
-        $this->form->addFields([new TLabel('Solução Aplicada (Para finalizar)', '#28a745')], [$solution_notes]);
+        // --- 🔒 LÓGICA DE SEGURANÇA DO TÉCNICO ---
+        // 1. Verifica se o usuário logado é ADMIN
+        $is_admin = false;
+        $user_id = TSession::getValue('userid');
+        TTransaction::open('permission');
+        $user_groups = SystemUserGroup::where('system_user_id', '=', $user_id)->load();
+        foreach ($user_groups as $group) {
+            if ($group->system_group_id == 1) $is_admin = true;
+        }
+        TTransaction::close();
 
-        // --- Botões ---
+        // 2. Se NÃO for Admin, força o técnico logado
+        if (!$is_admin) {
+            TTransaction::open('med_maintenance');
+            $logged_tech = Technician::where('system_user_id', '=', $user_id)->first();
+            TTransaction::close();
+
+            if ($logged_tech) {
+                // Define o valor do campo como o ID do técnico logado
+                $technician_id->setValue($logged_tech->id);
+                // Bloqueia o campo para ele não mudar
+                $technician_id->setEditable(FALSE);
+            }
+        }
+        // ------------------------------------------
+
+        $this->form->addFields( [new TLabel('ID')], [$id] );
+        $this->form->addFields( [new TLabel('Equipamento')], [$asset_id] );
+        $this->form->addFields( [new TLabel('Técnico Responsável')], [$technician_id] );
+        $this->form->addFields( [new TLabel('Título Curto')], [$title] );
+        $this->form->addFields( [new TLabel('Descrição do Problema')], [$description] );
         
-        // 1. Salvar (Apenas atualiza dados)
-        $btn_save = $this->form->addAction('Salvar Alterações', new TAction([$this, 'onSave']), 'fa:save white');
-        $btn_save->addStyleClass('btn-primary');
-        
-        // 2. Finalizar (Encerra a OS)
-        $btn_finish = $this->form->addAction('FINALIZAR CHAMADO', new TAction([$this, 'onFinish']), 'fa:check white');
-        $btn_finish->addStyleClass('btn-success'); // Botão Verde
-        
-        $this->form->addAction('Limpar', new TAction([$this, 'onClear']), 'fa:eraser red');
+        $row = $this->form->addFields( 
+            [new TLabel('Prioridade'), $priority], 
+            [new TLabel('Status Atual'), $status],
+            [new TLabel('Data Abertura'), $created_at]
+        );
+        $row->layout = ['col-sm-4', 'col-sm-4', 'col-sm-4'];
+
+        $this->form->addAction('Salvar', new TAction([$this, 'onSave']), 'fa:save green');
+        $this->form->addAction('Voltar', new TAction(['MaintenanceOrderList', 'onReload']), 'fa:arrow-left');
 
         $vbox = new TVBox;
         $vbox->style = 'width: 100%';
+        $vbox->add(new TXMLBreadCrumb('menu.xml', 'MaintenanceOrderList'));
         $vbox->add($this->form);
+
         parent::add($vbox);
     }
 
-    public function onSave($param = null)
+    public function onSave()
     {
-        try {
+        try
+        {
             TTransaction::open('med_maintenance');
-            
             $this->form->validate();
             $data = $this->form->getData();
-
-            // Validação de Duplicidade (Passando o ID atual para ignorar a própria OS)
-            EquipmentService::validateMaintenanceRequest($data->asset_id, $data->id);
-
-            $object = new MaintenanceOrder();
+            $object = new MaintenanceOrder;
             $object->fromArray( (array) $data);
-            
-            if (empty($object->id)) {
-                $object->status = 'ABERTA';
-                $object->opened_at = date('Y-m-d H:i:s');
-            }
-            
             $object->store();
-
-            $data->id = $object->id;
-            $this->form->setData($data);
-            
+            $this->form->setData($object);
             TTransaction::close();
-            
-            new TMessage('info', 'Dados atualizados com sucesso!');
-            
-        } catch (Exception $e) {
-            new TMessage('error', $e->getMessage());
-            TTransaction::rollback();
+            new TMessage('info', 'Registro salvo com sucesso');
         }
-    }
-
-    /**
-     * Lógica de Finalização da OS
-     */
-    public function onFinish($param = null)
-    {
-        try {
-            TTransaction::open('med_maintenance');
-            
-            // Pega os dados da tela
-            $data = $this->form->getData();
-            
-            // 1. Validação Específica para Fechamento
-            if (empty($data->solution_notes)) {
-                throw new Exception("<b>ATENÇÃO:</b> Para finalizar o chamado, você deve preencher o campo 'Solução Aplicada' explicando o que foi feito.");
-            }
-            
-            if (empty($data->technician_id)) {
-                 throw new Exception("<b>ATENÇÃO:</b> É necessário atribuir um Técnico Responsável antes de finalizar.");
-            }
-
-            // 2. Carrega e Atualiza o Objeto
-            $object = new MaintenanceOrder();
-            $object->fromArray( (array) $data);
-            
-            // Aplica o fechamento
-            $object->status = 'FECHADA';
-            $object->closed_at = date('Y-m-d H:i:s');
-            
-            $object->store();
-            
-            // Atualiza a tela
-            $data->id = $object->id;
-            $data->status = 'FECHADA';
-            $this->form->setData($data);
-            
-            TTransaction::close();
-            
-            new TMessage('info', '<b>PARABÉNS!</b><br>Ordem de Serviço finalizada com sucesso.');
-            
-        } catch (Exception $e) {
-            new TMessage('warning', $e->getMessage()); // Warning usa amarelo/laranja
+        catch (Exception $e)
+        {
+            new TMessage('error', $e->getMessage());
             TTransaction::rollback();
         }
     }
 
     public function onEdit($param)
     {
-        try {
-            if (isset($param['key'])) {
+        try
+        {
+            if (isset($param['key']))
+            {
                 $key = $param['key'];
-                TTransaction::open('med_maintenance'); 
+                TTransaction::open('med_maintenance');
                 $object = new MaintenanceOrder($key);
                 $this->form->setData($object);
-                TTransaction::close(); 
+                TTransaction::close();
             }
-        } catch (Exception $e) {
+        }
+        catch (Exception $e)
+        {
             new TMessage('error', $e->getMessage());
             TTransaction::rollback();
         }
     }
-
-    public function onClear($param)
-    {
-        $this->form->clear(true);
-    }
 }
-?>
