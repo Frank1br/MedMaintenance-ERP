@@ -20,11 +20,9 @@ class MaintenanceOrderForm extends TPage
         $id->setEditable(false);
         
         // Combo que busca os Equipamentos do Banco
-        // Parâmetros: (nome_campo, banco, model, id, coluna_para_mostrar)
         $asset_id = new TDBCombo('asset_id', 'med_maintenance', 'Asset', 'id', 'name');
-        $asset_id->enableSearch(); // Permite digitar para buscar
+        $asset_id->enableSearch(); 
         
-        // Combo de Prioridade
         $priority = new TCombo('priority');
         $priority->addItems([
             'BAIXA' => '🟢 Baixa',
@@ -37,6 +35,7 @@ class MaintenanceOrderForm extends TPage
         $title = new TEntry('title');
         $description = new TText('description');
         $description->setSize('100%', 100);
+        // Correção do Placeholder que fizemos antes
         $description->setProperty('placeholder', 'Descreva o defeito detalhadamente...');
 
         // Validações
@@ -55,8 +54,8 @@ class MaintenanceOrderForm extends TPage
         $this->form->addFields([new TLabel('Título do Problema*', '#ff0000'), $title]);
         $this->form->addFields([new TLabel('Descrição Detalhada*', '#ff0000'), $description]);
 
-        // --- Botão de Salvar (Com Validação de Serviço) ---
-        $btn = $this->form->addAction('Abrir Chamado', new TAction([$this, 'onSave']), 'fa:save white');
+        // --- Botões ---
+        $btn = $this->form->addAction('Salvar Chamado', new TAction([$this, 'onSave']), 'fa:save white');
         $btn->addStyleClass('btn-primary');
         
         $this->form->addAction('Limpar', new TAction([$this, 'onClear']), 'fa:eraser red');
@@ -75,16 +74,18 @@ class MaintenanceOrderForm extends TPage
             $this->form->validate();
             $data = $this->form->getData();
 
-            // --- AQUI ESTÁ A MÁGICA (CHAMADA AO SERVICE LAYER) ---
-            // Antes de salvar, perguntamos ao Service se pode.
-            // Se não puder, ele lança um Exception e o código pula para o catch block.
+            // Validação do Service Layer (Bloqueio de Sucata)
             EquipmentService::validateMaintenanceRequest($data->asset_id);
 
-            // Se passou, salva normal
             $object = new MaintenanceOrder();
             $object->fromArray( (array) $data);
-            $object->status = 'ABERTA';
-            $object->opened_at = date('Y-m-d H:i:s');
+            
+            // Define status inicial apenas se for inclusão
+            if (empty($object->id)) {
+                $object->status = 'ABERTA';
+                $object->opened_at = date('Y-m-d H:i:s');
+            }
+            
             $object->store();
 
             $data->id = $object->id;
@@ -92,10 +93,30 @@ class MaintenanceOrderForm extends TPage
             
             TTransaction::close();
             
-            new TMessage('info', 'Chamado aberto com sucesso! OS: ' . $object->id);
+            new TMessage('info', 'Chamado salvo com sucesso! OS: ' . $object->id);
             
         } catch (Exception $e) {
-            new TMessage('error', $e->getMessage()); // Exibe o erro do Service (ex: "Equipamento Baixado")
+            new TMessage('error', $e->getMessage());
+            TTransaction::rollback();
+        }
+    }
+
+    /**
+     * ESTE É O MÉTODO QUE FALTAVA!
+     * Carrega os dados do banco para o formulário quando clicamos em Editar
+     */
+    public function onEdit($param)
+    {
+        try {
+            if (isset($param['key'])) {
+                $key = $param['key']; // Pega o ID da OS vindo da lista
+                TTransaction::open('med_maintenance'); 
+                $object = new MaintenanceOrder($key); // Carrega o objeto
+                $this->form->setData($object); // Joga na tela
+                TTransaction::close(); 
+            }
+        } catch (Exception $e) {
+            new TMessage('error', $e->getMessage());
             TTransaction::rollback();
         }
     }
