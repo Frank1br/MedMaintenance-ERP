@@ -19,10 +19,20 @@ class MaintenanceOrderForm extends TPage
         $id = new TEntry('id');
         $id->setEditable(false);
         
-        // Combo que busca os Equipamentos do Banco
+        // 1. Combo de Equipamentos
         $asset_id = new TDBCombo('asset_id', 'med_maintenance', 'Asset', 'id', 'name');
         $asset_id->enableSearch(); 
         
+        // 2. Combo de Técnicos (NOVIDADE)
+        // Criamos um filtro para só mostrar técnicos que estão Ativos (active = 'Y')
+        $filter_tech = new TCriteria;
+        $filter_tech->add(new TFilter('active', '=', 'Y'));
+        
+        $technician_id = new TDBCombo('technician_id', 'med_maintenance', 'Technician', 'id', 'name', 'name', $filter_tech);
+        $technician_id->enableSearch();
+        $technician_id->setProperty('placeholder', 'Selecione um técnico...');
+
+        // 3. Prioridade
         $priority = new TCombo('priority');
         $priority->addItems([
             'BAIXA' => '🟢 Baixa',
@@ -35,19 +45,25 @@ class MaintenanceOrderForm extends TPage
         $title = new TEntry('title');
         $description = new TText('description');
         $description->setSize('100%', 100);
-        // Correção do Placeholder que fizemos antes
         $description->setProperty('placeholder', 'Descreva o defeito detalhadamente...');
 
-        // Validações
+        // --- Validações ---
         $asset_id->addValidation('Equipamento', new TRequiredValidator);
         $title->addValidation('Título do Problema', new TRequiredValidator);
         $description->addValidation('Descrição', new TRequiredValidator);
+        // Técnico não é obrigatório na abertura (pode ser atribuído depois), então sem validação por enquanto.
 
         // --- Layout ---
         $this->form->addFields([new TLabel('Nº OS')], [$id])->layout = ['col-sm-2', 'col-sm-10'];
         
+        // Linha do Equipamento (Ocupa a linha toda agora para dar destaque)
         $this->form->addFields(
-            [new TLabel('Equipamento Alvo*', '#ff0000'), $asset_id],
+            [new TLabel('Equipamento Alvo*', '#ff0000'), $asset_id]
+        );
+
+        // Nova Linha: Técnico e Prioridade
+        $this->form->addFields(
+            [new TLabel('Técnico Responsável'), $technician_id],
             [new TLabel('Prioridade'), $priority]
         )->layout = ['col-sm-8', 'col-sm-4'];
         
@@ -74,13 +90,12 @@ class MaintenanceOrderForm extends TPage
             $this->form->validate();
             $data = $this->form->getData();
 
-            // Validação do Service Layer (Bloqueio de Sucata)
+            // Validação do Service Layer
             EquipmentService::validateMaintenanceRequest($data->asset_id);
 
             $object = new MaintenanceOrder();
-            $object->fromArray( (array) $data);
+            $object->fromArray( (array) $data); // (array) garantido aqui!
             
-            // Define status inicial apenas se for inclusão
             if (empty($object->id)) {
                 $object->status = 'ABERTA';
                 $object->opened_at = date('Y-m-d H:i:s');
@@ -101,18 +116,14 @@ class MaintenanceOrderForm extends TPage
         }
     }
 
-    /**
-     * ESTE É O MÉTODO QUE FALTAVA!
-     * Carrega os dados do banco para o formulário quando clicamos em Editar
-     */
     public function onEdit($param)
     {
         try {
             if (isset($param['key'])) {
-                $key = $param['key']; // Pega o ID da OS vindo da lista
+                $key = $param['key'];
                 TTransaction::open('med_maintenance'); 
-                $object = new MaintenanceOrder($key); // Carrega o objeto
-                $this->form->setData($object); // Joga na tela
+                $object = new MaintenanceOrder($key);
+                $this->form->setData($object);
                 TTransaction::close(); 
             }
         } catch (Exception $e) {
