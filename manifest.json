@@ -1,6 +1,6 @@
 {
-  "short_name": "Adianti Template",
-  "name": "Adianti Template",
+  "short_name": "MedMaintenance",
+  "name": "MedMaintenance ERP",
   "icons": [
     {
       "src": "app/images/icon.png",

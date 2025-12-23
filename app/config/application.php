@@ -3,8 +3,8 @@ return [
     'general' =>  [
         'timezone' => 'America/Sao_Paulo',
         'language' => 'pt',
-        'application' => 'template',
-        'title' => 'Adianti Template 8.4',
+        'application' => 'MedMaintenance', // NOME MUDADO
+        'title' => 'MedMaintenance ERP',   // TÍTULO MUDADO
         'theme' => 'adminbs5',
         'seed' => 'odfu6asnodf8as',
         'rest_key' => '',
@@ -27,11 +27,10 @@ return [
         'multi_database' => '0',
         'validate_strong_pass' => '1',
         'notification_login' => '0',
-        'welcome_message' => 'Have a great jorney!',
+        'welcome_message' => 'Bem-vindo ao MedMaintenance!',
         'request_log_service' => 'SystemRequestLogService',
         'request_log' => '0',
         'request_log_types' => 'cli,web,rest',
-        /*'password_renewal_interval' => '',*/
     ],
     'recaptcha' => [
         'enabled' => '0',
@@ -49,7 +48,8 @@ return [
         'user_register' => '1',
         'reset_password' => '1',
         'default_groups' => '2',
-        'default_screen' => '30',
+        // --- AQUI ESTÁ A MÁGICA: Trocamos '30' pelo nome do seu Dashboard ---
+        'default_screen' => 'MaintenanceDashboard', 
         'default_units' => '1',
     ],
     'highlight' => [
@@ -84,7 +84,6 @@ return [
             'use_swal' => '1'
         ],
         'theme' => [
-            /*'menu_dark_color' => 'rgb(29 45 83)',*/
             'login_mode'  => 'light',
             'menu_mode'  => 'dark',
             'main_mode'  => 'light',
