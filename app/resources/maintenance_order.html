@@ -1,73 +1,64 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Ordem de Serviço</title>
-    <style>
-        body { font-family: Arial, sans-serif; font-size: 12px; color: #333; }
-        .header { width: 100%; border-bottom: 2px solid #2c3e50; padding-bottom: 10px; margin-bottom: 20px; }
-        .logo { font-size: 24px; font-weight: bold; color: #2c3e50; }
-        .title { font-size: 18px; color: #7f8c8d; text-align: right; }
-        .section-title { background-color: #ecf0f1; padding: 5px; font-weight: bold; margin-top: 20px; border-left: 5px solid #3498db; }
-        table { width: 100%; margin-top: 10px; border-collapse: collapse; }
-        td { padding: 8px; vertical-align: top; }
-        .label { font-weight: bold; color: #555; width: 150px; }
-        .footer { margin-top: 50px; width: 100%; text-align: center; font-size: 10px; color: #999; border-top: 1px solid #ddd; padding-top: 10px; }
-        .signature-box { margin-top: 60px; width: 100%; }
-        .signature-line { width: 40%; border-top: 1px solid #000; display: inline-block; margin: 0 4%; text-align: center; padding-top: 5px; }
-    </style>
-</head>
-<body>
+<style>
+    body { font-family: Arial, sans-serif; font-size: 12px; }
+    .header { border-bottom: 2px solid #ccc; padding-bottom: 10px; margin-bottom: 20px; }
+    .title { font-size: 18px; font-weight: bold; color: #333; }
+    .section-title { background-color: #f0f2f5; padding: 5px; font-weight: bold; border-left: 5px solid #007bff; margin-top: 20px; margin-bottom: 10px;}
+    .row { margin-bottom: 8px; }
+    .label { font-weight: bold; width: 150px; display: inline-block; }
+    .content { display: inline-block; }
+    .description-box { border: 1px solid #ccc; padding: 10px; min-height: 80px; background-color: #fafafa; }
+    .footer { margin-top: 50px; text-align: center; font-size: 10px; color: #999; }
+    
+    /* Estilos da Assinatura */
+    .signature-box { margin-top: 50px; width: 100%; text-align: center; }
+    .signature-line { display: inline-block; width: 40%; margin: 0 20px; vertical-align: bottom; }
+    .signature-img { display: block; margin: 0 auto 5px auto; max-width: 150px; max-height: 80px; }
+    .line { border-top: 1px solid #000; margin-top: 5px; }
+</style>
 
-    <table class="header">
-        <tr>
-            <td class="logo">MedMaintenance ERP</td>
-            <td class="title">Ordem de Serviço #{$id}</td>
-        </tr>
-    </table>
+<div class="header">
+    <div style="float:right" class="title">Ordem de Serviço #{$id}</div>
+    <div class="title">MedMaintenance ERP</div>
+</div>
 
-    <div class="section-title">DADOS GERAIS</div>
-    <table>
-        <tr>
-            <td class="label">Equipamento:</td>
-            <td>{$asset_name}</td>
-        </tr>
-        <tr>
-            <td class="label">Número de Série:</td>
-            <td>{$asset_serial}</td>
-        </tr>
-        <tr>
-            <td class="label">Técnico Responsável:</td>
-            <td>{$technician_name}</td>
-        </tr>
-        <tr>
-            <td class="label">Data de Abertura:</td>
-            <td>{$created_at}</td>
-        </tr>
-        <tr>
-            <td class="label">Status:</td>
-            <td><b>{$status}</b> (Prioridade: {$priority})</td>
-        </tr>
-    </table>
+<div class="section-title">DADOS GERAIS</div>
 
-    <div class="section-title">DESCRIÇÃO DO PROBLEMA</div>
-    <div style="padding: 10px; border: 1px solid #ddd; min-height: 80px; margin-top: 10px; background-color: #fafafa;">
-        {$description}
+<div class="row">
+    <span class="label">Equipamento:</span> <span class="content">{$asset_name}</span>
+</div>
+<div class="row">
+    <span class="label">Número de Série:</span> <span class="content">{$asset_serial}</span>
+</div>
+<div class="row">
+    <span class="label">Técnico Responsável:</span> <span class="content">{$technician_name}</span>
+</div>
+<div class="row">
+    <span class="label">Data de Abertura:</span> <span class="content">{$created_at}</span>
+</div>
+<div class="row">
+    <span class="label">Status:</span> <span class="content"><b>{$status}</b> (Prioridade: {$priority})</span>
+</div>
+
+<div class="section-title">DESCRIÇÃO DO PROBLEMA</div>
+
+<div class="description-box">
+    {$description}
+</div>
+
+<div class="signature-box">
+    <div class="signature-line">
+        {$signature_img}
+        <div class="line"></div>
+        Assinatura do Técnico<br>
+        <b>{$technician_name}</b>
     </div>
 
-    <div class="signature-box">
-        <div class="signature-line">
-            Assinatura do Técnico<br>
-            <b>{$technician_name}</b>
-        </div>
-        <div class="signature-line">
-            Assinatura do Responsável (Setor)<br>
-            __________________________
-        </div>
+    <div class="signature-line">
+        <br><br><br> <div class="line"></div>
+        Assinatura do Responsável (Setor)
     </div>
+</div>
 
-    <div class="footer">
-        Gerado automaticamente pelo sistema MedMaintenance ERP em {$print_date}
-    </div>
-
-</body>
-</html>
+<div class="footer">
+    Gerado automaticamente pelo sistema MedMaintenance ERP em {$print_date}
+</div>

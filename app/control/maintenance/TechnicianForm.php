@@ -1,7 +1,7 @@
 <?php
 /**
  * TechnicianForm
- * Cadastro de Técnicos com TSignaturePad
+ * Cadastro de Técnicos (Versão Robusta: Força Bruta no Salvamento)
  */
 class TechnicianForm extends TPage
 {
@@ -11,11 +11,9 @@ class TechnicianForm extends TPage
     {
         parent::__construct();
 
-        // Cria o formulário
         $this->form = new BootstrapFormBuilder('form_Technician');
         $this->form->setFormTitle('Cadastro de Técnico');
 
-        // Criação dos campos básicos
         $id = new TEntry('id');
         $name = new TEntry('name');
         $email = new TEntry('email');
@@ -29,45 +27,33 @@ class TechnicianForm extends TPage
         $system_user_id = new TDBCombo('system_user_id', 'permission', 'SystemUser', 'id', 'name');
         $system_user_id->enableSearch(); 
         
-        // --- ✍️ AJUSTE PARA O SEU COMPONENTE (TSignaturePad) ---
-        // Baseado no seu print de referência
-        try {
-            $signature = new TSignaturePad('signature'); 
+        // Componente de Assinatura
+        if (class_exists('TSignaturePad')) {
+            $signature = new TSignaturePad('signature');
             $signature->setLabel('Assinatura Digital');
-            
-            // Configurações do seu print
-            $signature->setSize('100%', 200); // Tamanho na tela
-            $signature->setDrawSize(800, 400); // Resolução do desenho
-            $signature->setPenStyle('#000000', 2); // Cor preta, espessura 2
-            
-            $signature->setTip('Assine acima usando o mouse');
+            $signature->setSize('100%', 200); 
+            $signature->setDrawSize(800, 400); 
+            $signature->setPenStyle('#000000', 2);
+        } else {
+            // Fallback (plano B)
+            $signature = new TFile('signature');
+            $signature->setLabel('Assinatura (Arquivo)');
         }
-        catch (Error $e) {
-            // Fallback apenas se der erro grave
-            $signature = new TLabel('Erro ao carregar componente TSignaturePad.');
-            $signature->setFontColor('red');
-        }
-        // -------------------------------------------------------
 
-        // Propriedades
         $id->setEditable(FALSE);
         $id->setSize('20%');
         $name->setSize('100%');
         $email->setSize('100%');
         $system_user_id->setSize('100%');
 
-        // Layout
         $this->form->addFields( [new TLabel('ID')], [$id] );
         $this->form->addFields( [new TLabel('Nome Completo')], [$name] );
         $this->form->addFields( [new TLabel('Email')], [$email] );
         $this->form->addFields( [new TLabel('Telefone')], [$phone] );
         $this->form->addFields( [new TLabel('Login de Acesso')], [$system_user_id] );
         $this->form->addFields( [new TLabel('Ativo?')], [$active] );
-
-        // Adiciona a Assinatura
         $this->form->addFields( [new TLabel('Assinatura')], [$signature] );
 
-        // Botões
         $this->form->addAction('Salvar', new TAction([$this, 'onSave']), 'fa:save green');
         $this->form->addAction('Limpar', new TAction([$this, 'onClear']), 'fa:eraser red');
         $this->form->addAction('Voltar', new TAction(['TechnicianList', 'onReload']), 'fa:arrow-left');
@@ -88,32 +74,58 @@ class TechnicianForm extends TPage
             $this->form->validate(); 
             $data = $this->form->getData(); 
             
-            // --- LÓGICA DE SALVAMENTO ---
-            // O TSignaturePad geralmente salva a imagem em tmp/ e retorna o nome
-            // Vamos mover para a pasta definitiva files/signatures
-            if (!empty($data->signature))
-            {
-                $target_folder = 'files/signatures';
-                $target_path   = $target_folder . '/' . $data->signature;
-                $source_path   = 'tmp/' . $data->signature;
-                
-                if (!file_exists($target_folder)) {
-                    mkdir($target_folder, 0777, true);
-                }
-                
-                // Verifica se é um arquivo (comportamento padrão)
-                if (file_exists($source_path)) {
-                    rename($source_path, $target_path);
+            // --- 🕵️‍♂️ LÓGICA DE DETETIVE ---
+            // Vamos descobrir o que veio e extrair o nome do arquivo na força
+            
+            $final_signature_name = null;
+            $raw_value = $data->signature;
+
+            // CENÁRIO 1: É um array?
+            if (is_array($raw_value)) {
+                $final_signature_name = $raw_value[0] ?? null;
+            }
+            // CENÁRIO 2: É JSON string? (Ex: '["imagem.png"]')
+            elseif (is_string($raw_value) && strpos($raw_value, '[') !== false) {
+                $decoded = json_decode($raw_value);
+                if (is_array($decoded)) {
+                    $final_signature_name = $decoded[0] ?? null;
+                } else {
+                    $final_signature_name = $raw_value; // JSON falhou, usa a string toda
                 }
             }
+            // CENÁRIO 3: É texto puro? (O cenário ideal)
+            elseif (is_string($raw_value) && !empty($raw_value)) {
+                $final_signature_name = $raw_value;
+            }
 
+            // Mover arquivo (Se tivermos um nome)
+            if ($final_signature_name) {
+                $target_folder = 'files/signatures';
+                $target_path   = $target_folder . '/' . $final_signature_name;
+                $source_path   = 'tmp/' . $final_signature_name; 
+                
+                if (!file_exists($target_folder)) mkdir($target_folder, 0777, true);
+                
+                if (file_exists($source_path)) rename($source_path, $target_path);
+            }
+
+            // Salvar no Banco
             $object = new Technician; 
             $object->fromArray( (array) $data); 
+            
+            // 🔥 AQUI É O PULO DO GATO:
+            // Forçamos a gravação do nome que encontramos, ignorando o resto.
+            if ($final_signature_name) {
+                $object->signature = $final_signature_name;
+            }
+            
             $object->store(); 
             $this->form->setData($object); 
             TTransaction::close(); 
             
-            new TMessage('info', 'Registro salvo com sucesso');
+            // Mostra na tela qual nome de arquivo foi salvo para confirmarmos
+            $msg = $final_signature_name ? "Arquivo salvo: $final_signature_name" : "Atenção: Assinatura vazia!";
+            new TMessage('info', 'Registro Salvo! ' . $msg);
         }
         catch (Exception $e) 
         {

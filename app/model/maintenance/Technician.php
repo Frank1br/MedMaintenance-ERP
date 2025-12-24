@@ -1,28 +1,41 @@
 <?php
+/**
+ * Technician Active Record
+ */
 class Technician extends TRecord
 {
-    const TABLENAME  = 'technicians'; // Confirme se está no plural aqui também
-    const PRIMARYKEY = 'id';
-    const IDPOLICY   =  'serial'; 
+    const TABLENAME = 'technicians';
+    const PRIMARYKEY= 'id';
+    const IDPOLICY =  'serial'; // {max, serial}
+    
+    // Adicione esta trait se estiver usando SystemUser para log de criação
+    // use SystemChangeLogTrait; 
 
     public function __construct($id = NULL)
     {
         parent::__construct($id);
+        
+        // Definição dos atributos que podem ser salvos
         parent::addAttribute('name');
         parent::addAttribute('email');
         parent::addAttribute('phone');
+        parent::addAttribute('specialty'); // Vi essa coluna no seu print do banco
         parent::addAttribute('active');
-        // ✅ O NOVO CAMPO:
-        parent::addAttribute('system_user_id'); 
+        parent::addAttribute('system_user_id');
+        
+        // ✅ ADICIONE ESTA LINHA AQUI:
+        parent::addAttribute('signature'); 
     }
-    
+
     /**
-     * Método para buscar o Nome do Usuário vinculado (para listas e relatórios)
+     * Relacionamento com SystemUser (Opcional, mas bom ter)
      */
     public function get_system_user()
     {
-        // Busca na conexão 'permission' (onde ficam os usuários padrão do Adianti)
-        return SystemUser::find($this->system_user_id);
+        if (empty($this->system_user))
+        {
+            $this->system_user = new SystemUser($this->system_user_id);
+        }
+        return $this->system_user;
     }
 }
-?>
