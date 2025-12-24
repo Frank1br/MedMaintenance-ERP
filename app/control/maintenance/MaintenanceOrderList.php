@@ -1,7 +1,7 @@
 <?php
 /**
  * MaintenanceOrderList
- * Lista de Ordens de Serviço com Segurança (RBAC)
+ * Versão Final Compatível: API RESEND + Correção de Versão (Sem setPlaceholder)
  */
 class MaintenanceOrderList extends TPage
 {
@@ -18,41 +18,69 @@ class MaintenanceOrderList extends TPage
     public function __construct()
     {
         parent::__construct();
+        $this->setTargetContainer('adianti_div_content');
 
-        // Cria o formulário de busca
+        // 1. FORMULÁRIO DE BUSCA
         $this->form = new BootstrapFormBuilder(self::$formName);
         $this->form->setFormTitle('Ordens de Serviço');
 
         $title = new TEntry('title');
         $status = new TCombo('status');
-        $status->addItems([
-            'ABERTA' => 'Aberta',
-            'EM ANDAMENTO' => 'Em Andamento',
-            'FECHADA' => 'Fechada'
-        ]);
+        $status->addItems(['ABERTA' => 'Aberta', 'EM ANDAMENTO' => 'Em Andamento', 'FECHADA' => 'Fechada']);
 
         $this->form->addFields( [new TLabel('Título')], [$title] );
         $this->form->addFields( [new TLabel('Status')], [$status] );
 
-        $this->form->addAction('Buscar', new TAction([$this, 'onSearch']), 'fa:search');
-        $this->form->addAction('Nova OS', new TAction(['MaintenanceOrderForm', 'onEdit']), 'fa:plus green');
+        $this->form->addAction('Buscar', new TAction([$this, 'onSearch']), 'fa:search blue');
+        $this->form->addAction('Nova OS', new TAction(['MaintenanceOrderForm', 'onClear']), 'fa:plus green');
 
-        // Cria a Datagrid (Tabela)
+        // 2. DATAGRID
         $this->datagrid = new BootstrapDatagridWrapper(new TDataGrid);
         $this->datagrid->width = '100%';
-        $this->datagrid->datatable = 'true'; // Habilita estilo responsivo
+        $this->datagrid->datatable = 'false';
 
-        // Cria as colunas
-        $col_id = new TDataGridColumn('id', 'ID', 'center', '10%');
-        $col_asset = new TDataGridColumn('{asset->name}', 'Equipamento', 'left', '30%');
-        $col_tech = new TDataGridColumn('{technician->name}', 'Técnico', 'left', '30%');
-        $col_status = new TDataGridColumn('status', 'Status', 'center', '20%');
-        $col_priority = new TDataGridColumn('priority', 'Prioridade', 'center', '10%');
+        // 3. AÇÕES INDIVIDUAIS
+        $action_edit = new TDataGridAction(['MaintenanceOrderForm', 'onEdit']);
+        $action_edit->setLabel('Editar Cadastro');
+        $action_edit->setImage('fa:edit blue');
+        $action_edit->setField(self::$primaryKey);
 
-        // Transformador de Status (Cores)
+        $action_pdf = new TDataGridAction(['MaintenanceOrderDocument', 'onGenerate']);
+        $action_pdf->setLabel('Imprimir OS');
+        $action_pdf->setImage('fa:print gray');
+        $action_pdf->setField(self::$primaryKey);
+
+        $action_email = new TDataGridAction([$this, 'onSendEmail']);
+        $action_email->setLabel('Enviar por E-mail');
+        $action_email->setImage('fa:envelope blue');
+        $action_email->setField(self::$primaryKey);
+
+        $action_del = new TDataGridAction([$this, 'onDelete']);
+        $action_del->setLabel('Excluir Registro');
+        $action_del->setImage('fa:trash red');
+        $action_del->setField(self::$primaryKey);
+
+        // 4. MENU DROP-DOWN
+        $action_group = new TDataGridActionGroup('Opções', 'fa:th');
+        $action_group->addHeader('Ações da OS');
+        $action_group->addAction($action_edit);
+        $action_group->addAction($action_pdf);
+        $action_group->addAction($action_email);
+        $action_group->addSeparator();
+        $action_group->addAction($action_del);
+
+        $this->datagrid->addActionGroup($action_group);
+
+        // 5. COLUNAS
+        $col_id = new TDataGridColumn('id', 'ID', 'center', '5%');
+        $col_asset = new TDataGridColumn('{asset->name}', 'Equipamento', 'left', '25%');
+        $col_tech = new TDataGridColumn('{technician->name}', 'Técnico', 'left', '25%');
+        $col_status = new TDataGridColumn('status', 'Status', 'center', '15%');
+        $col_priority = new TDataGridColumn('priority', 'Prioridade', 'center', '15%');
+
         $col_status->setTransformer(function($value) {
             $class = ($value == 'FECHADA') ? 'success' : (($value == 'ABERTA') ? 'danger' : 'warning');
-            return "<span class='badge bg-{$class}'>{$value}</span>";
+            return "<span class='label label-{$class}'>{$value}</span>";
         });
 
         $this->datagrid->addColumn($col_id);
@@ -61,34 +89,12 @@ class MaintenanceOrderList extends TPage
         $this->datagrid->addColumn($col_status);
         $this->datagrid->addColumn($col_priority);
 
-        // Ações da linha (Editar/Excluir)
-        $action_edit = new TDataGridAction(['MaintenanceOrderForm', 'onEdit']);
-        $action_edit->setLabel('Editar');
-        $action_edit->setImage('fa:edit blue');
-        $action_edit->setField('id');
-        $this->datagrid->addAction($action_edit);
-
-        $action_del = new TDataGridAction([$this, 'onDelete']);
-        $action_del->setLabel('Excluir');
-        $action_del->setImage('fa:trash red');
-        $action_del->setField('id');
-
-        $action_pdf = new TDataGridAction(['MaintenanceOrderDocument', 'onGenerate']);
-        $action_pdf->setLabel('Imprimir OS');
-        $action_pdf->setImage('fas:print gray'); // Ícone de impressora
-        $action_pdf->setField('id'); // Passa o ID como parâmetro
-        $this->datagrid->addAction($action_pdf);
-        
-        $this->datagrid->addAction($action_del);
-
-        // ✅ A CORREÇÃO ESTÁ AQUI: Cria o modelo da grid
         $this->datagrid->createModel();
 
-        // Paginação
+        // 6. NAVEGAÇÃO
         $this->pageNavigation = new TPageNavigation;
         $this->pageNavigation->setAction(new TAction([$this, 'onReload']));
 
-        // Container
         $vbox = new TVBox;
         $vbox->style = 'width: 100%';
         $vbox->add(new TXMLBreadCrumb('menu.xml', __CLASS__));
@@ -100,140 +106,239 @@ class MaintenanceOrderList extends TPage
     }
 
     /**
-     * Aplica a lógica de Segurança: Admin vê tudo, Técnico vê só o dele
+     * Passo 1: Janela de Confirmação (TWindow)
      */
-    private function applySystemSecurity($criteria)
+    public function onSendEmail($param)
     {
-        // 1. Descobre quem está logado
-        $logged_user_id = TSession::getValue('userid');
-        
-        // 2. Verifica se é ADMIN (Grupo 1)
-        TTransaction::open('permission');
-        $is_admin = false;
-        // Carrega os grupos do usuário
-        $user_groups = SystemUserGroup::where('system_user_id', '=', $logged_user_id)->load();
-        foreach ($user_groups as $group) {
-            if ($group->system_group_id == 1) { // 1 é o padrão para Admin
-                $is_admin = true;
-            }
-        }
-        TTransaction::close();
-
-        // 3. Se NÃO for Admin, aplica o filtro
-        if (!$is_admin) {
-            TTransaction::open('med_maintenance');
-            // Busca se esse usuário é um Técnico
-            $technician = Technician::where('system_user_id', '=', $logged_user_id)->first();
+        try {
+            $key = $param['key'] ?? $param['id']; 
+            
+            TTransaction::open(self::$database);
+            $order = new MaintenanceOrder($key);
+            $technician = new Technician($order->technician_id);
+            $suggested_email = $technician->email; 
             TTransaction::close();
 
-            if ($technician) {
-                // SUCESSO: É um técnico. Filtra pelo ID dele.
-                $criteria->add(new TFilter('technician_id', '=', $technician->id));
-            } else {
-                // ERRO: Usuário comum tentando acessar. Bloqueia tudo.
-                $criteria->add(new TFilter('id', '<', 0));
-                new TMessage('error', 'ATENÇÃO: Seu usuário não está vinculado a nenhum cadastro de Técnico.');
+            $form = new BootstrapFormBuilder('form_email_popup');
+            
+            $email_dest = new TEntry('email_dest');
+            $email_dest->setValue($suggested_email); 
+            $email_dest->setSize('100%');
+            
+            // Adicionamos a dica como um Label vermelho para chamar atenção
+            $lbl_info = new TLabel('Nota: No plano grátis Resend, envie apenas para seu e-mail de cadastro.');
+            $lbl_info->setFontColor('red');
+            $lbl_info->setFontSize(10);
+            
+            $form->addFields([new TLabel('E-mail de Destino:')], [$email_dest]);
+            $form->addFields([], [$lbl_info]);
+            
+            $action = new TAction([$this, 'sendEmailNow']);
+            $action->setParameter('id', $key);
+            $form->addAction('Enviar Agora', $action, 'fa:paper-plane green');
+            
+            $window = TWindow::create('Enviar OS via Resend API', 0.6, null);
+            $window->add($form);
+            $window->show();
+            
+        } catch (Exception $e) {
+            new TMessage('error', $e->getMessage());
+        }
+    }
+
+    /**
+     * Passo 2: Disparo via RESEND API (Com PDF Corrigido via Dompdf)
+     */
+    public function sendEmailNow($param)
+    {
+        try {
+            $key = $param['id'];
+            $dest_email = $param['email_dest'];
+            
+            $env_path = getcwd() . '/.env';
+            $env = file_exists($env_path) ? parse_ini_file($env_path) : [];
+
+            if (empty($env['RESEND_API_KEY'])) throw new Exception("Configure a RESEND_API_KEY no .env");
+
+            TTransaction::open(self::$database);
+            $object = new MaintenanceOrder($key);
+            $asset = new Asset($object->asset_id);
+            $technician = new Technician($object->technician_id);
+
+            // --- GERAÇÃO DO PDF (MÉTODO DOMPDF PURO) ---
+            $pdf_path = "tmp/OS_{$key}.pdf";
+            
+            // HTML simples e direto para garantir que não quebre
+            $html = "
+            <html>
+            <head>
+                <style>
+                    body { font-family: Arial, sans-serif; font-size: 12px; }
+                    h1 { color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
+                    .label { font-weight: bold; color: #555; }
+                    .box { background: #f9f9f9; padding: 10px; margin-bottom: 10px; border: 1px solid #ddd; }
+                </style>
+            </head>
+            <body>
+                <h1>Ordem de Serviço #{$key}</h1>
+                <p><b>Data:</b> " . date('d/m/Y H:i') . "</p>
+                
+                <div class='box'>
+                    <p><span class='label'>Equipamento:</span> {$asset->name}</p>
+                    <p><span class='label'>Técnico Responsável:</span> {$technician->name}</p>
+                    <p><span class='label'>Status Atual:</span> {$object->status}</p>
+                    <p><span class='label'>Prioridade:</span> {$object->priority}</p>
+                </div>
+                
+                <h3>Descrição do Problema</h3>
+                <div class='box'>
+                    " . nl2br($object->description) . "
+                </div>
+                
+                <br><br>
+                <hr>
+                <center><small>Documento gerado automaticamente pelo MedMaintenance ERP</small></center>
+            </body>
+            </html>";
+
+            // Usamos a classe Dompdf diretamente para evitar dependência do wkhtmltopdf
+            $dompdf = new \Dompdf\Dompdf();
+            $dompdf->loadHtml($html);
+            $dompdf->setPaper('A4', 'portrait');
+            $dompdf->render();
+            
+            // Salva o arquivo
+            file_put_contents($pdf_path, $dompdf->output());
+            
+            // Verifica se o arquivo foi realmente criado e tem conteúdo
+            if (!file_exists($pdf_path) || filesize($pdf_path) < 100) {
+                throw new Exception("Falha ao gerar o arquivo PDF. Verifique as permissões da pasta tmp/.");
             }
+            TTransaction::close();
+
+            // Prepara o Anexo em Base64
+            $pdf_content = file_get_contents($pdf_path);
+            $pdf_base64 = base64_encode($pdf_content);
+
+            // --- ENVIO VIA RESEND API ---
+            $url = "https://api.resend.com/emails";
+            
+            $data = [
+                "from" => "onboarding@resend.dev",
+                "to" => [$dest_email],
+                "subject" => "Ordem de Serviço #{$key} - MedMaintenance",
+                "html" => "<p>Olá,</p><p>Segue em anexo a <strong>OS #{$key}</strong>.</p><p>Att,<br>MedMaintenance ERP</p>",
+                "attachments" => [
+                     [
+                         "filename" => "OS_{$key}.pdf",
+                         "content" => $pdf_base64
+                     ]
+                ]
+            ];
+
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $url);
+            curl_setopt($ch, CURLOPT_POST, 1);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                'Authorization: Bearer ' . $env['RESEND_API_KEY'],
+                'Content-Type: application/json'
+            ]);
+
+            $response = curl_exec($ch);
+            $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            
+            if (curl_errno($ch)) {
+                throw new Exception('Erro cURL: ' . curl_error($ch));
+            }
+            curl_close($ch);
+
+            if ($http_code >= 200 && $http_code < 300) {
+                TWindow::closeWindow();
+                new TMessage('info', "Sucesso! Enviado via Resend para: <b>$dest_email</b>");
+            } else {
+                $error_data = json_decode($response, true);
+                $msg_erro = $error_data['message'] ?? $response;
+                if (strpos($msg_erro, 'domain') !== false) {
+                    $msg_erro .= "<br><br><b>Dica:</b> No plano grátis, o remetente DEVE ser 'onboarding@resend.dev'.";
+                }
+                throw new Exception("Erro API Resend ({$http_code}): " . $msg_erro);
+            }
+            
+        } catch (Exception $e) {
+            new TMessage('error', 'Falha no envio: ' . $e->getMessage());
+        }
+    }
+
+    private function applySystemSecurity($criteria)
+    {
+        $logged_user_id = TSession::getValue('userid');
+        TTransaction::open('permission');
+        $is_admin = false;
+        $user_groups = SystemUserGroup::where('system_user_id', '=', $logged_user_id)->load();
+        foreach ($user_groups as $group) { if ($group->system_group_id == 1) $is_admin = true; }
+        TTransaction::close();
+
+        if (!$is_admin) {
+            TTransaction::open(self::$database);
+            $technician = Technician::where('system_user_id', '=', $logged_user_id)->first();
+            TTransaction::close();
+            if ($technician) $criteria->add(new TFilter('technician_id', '=', $technician->id));
+            else $criteria->add(new TFilter('id', '<', 0));
         }
     }
 
     public function onReload($param = NULL)
     {
-        try
-        {
+        try {
             TTransaction::open(self::$database);
-
             $repository = new TRepository(self::$activeRecord);
-            
-            $criteria = new TCriteria;
-            
-            if ($this->filter_criteria) {
-                $criteria = clone $this->filter_criteria;
-            }
-
-            // Aplica a segurança
+            $criteria = $this->filter_criteria ? clone $this->filter_criteria : new TCriteria;
             $this->applySystemSecurity($criteria);
-
             $limit = 10;
             $criteria->setProperties($param);
             $criteria->setProperty('limit', $limit);
-
             $objects = $repository->load($criteria, FALSE);
-            
             $this->datagrid->clear();
-            if ($objects)
-            {
-                foreach ($objects as $object)
-                {
-                    $this->datagrid->addItem($object);
-                }
-            }
-
-            $criteria->resetProperties();
+            if ($objects) { foreach ($objects as $object) $this->datagrid->addItem($object); }
             $count = $repository->count($criteria);
-
             $this->pageNavigation->setCount($count);
             $this->pageNavigation->setProperties($param);
             $this->pageNavigation->setLimit($limit);
-
             TTransaction::close();
             $this->loaded = true;
-        }
-        catch (Exception $e)
-        {
-            new TMessage('error', $e->getMessage());
-            TTransaction::rollback();
-        }
+        } catch (Exception $e) { new TMessage('error', $e->getMessage()); TTransaction::rollback(); }
     }
 
     public function onSearch()
     {
         $data = $this->form->getData();
         $this->filter_criteria = new TCriteria;
-
-        if ($data->title) {
-            $this->filter_criteria->add(new TFilter('title', 'like', "%{$data->title}%"));
-        }
-        if ($data->status) {
-            $this->filter_criteria->add(new TFilter('status', '=', $data->status));
-        }
-
+        if ($data->title) $this->filter_criteria->add(new TFilter('title', 'like', "%{$data->title}%"));
+        if ($data->status) $this->filter_criteria->add(new TFilter('status', '=', $data->status));
         $this->form->setData($data);
         $this->onReload();
     }
 
     public function onDelete($param)
     {
-        $action = new TAction(array($this, 'Delete'));
+        $action = new TAction([$this, 'Delete']);
         $action->setParameters($param);
         new TQuestion('Deseja realmente excluir?', $action);
     }
 
     public function Delete($param)
     {
-        try
-        {
-            $key = $param['id'];
+        try {
             TTransaction::open(self::$database);
-            $object = new MaintenanceOrder($key);
+            $object = new MaintenanceOrder($param['id']);
             $object->delete();
             TTransaction::close();
             $this->onReload();
-            new TMessage('info', 'Registro excluído com sucesso');
-        }
-        catch (Exception $e)
-        {
-            new TMessage('error', $e->getMessage());
-            TTransaction::rollback();
-        }
+            new TMessage('info', 'Registro excluído');
+        } catch (Exception $e) { new TMessage('error', $e->getMessage()); }
     }
 
-    public function show()
-    {
-        if (!$this->loaded)
-        {
-            $this->onReload();
-        }
-        parent::show();
-    }
+    public function show() { if (!$this->loaded) $this->onReload(); parent::show(); }
 }
