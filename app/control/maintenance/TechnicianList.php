@@ -2,7 +2,7 @@
 /**
  * TechnicianList
  * Lista de Técnicos
- * @author Tech Lead (Gemini)
+ * @author Dev Frank 
  */
 class TechnicianList extends TPage
 {

@@ -16,6 +16,7 @@ class TechnicianForm extends TPage
 
         $id = new TEntry('id');
         $name = new TEntry('name');
+        $specialty = new TEntry('specialty');
         $email = new TEntry('email');
         $phone = new TEntry('phone');
         
@@ -43,11 +44,13 @@ class TechnicianForm extends TPage
         $id->setEditable(FALSE);
         $id->setSize('20%');
         $name->setSize('100%');
+        $specialty->setSize('100%');
         $email->setSize('100%');
         $system_user_id->setSize('100%');
 
         $this->form->addFields( [new TLabel('ID')], [$id] );
         $this->form->addFields( [new TLabel('Nome Completo')], [$name] );
+        $this->form->addFields( [new TLabel('Especialidade')], [$specialty] );
         $this->form->addFields( [new TLabel('Email')], [$email] );
         $this->form->addFields( [new TLabel('Telefone')], [$phone] );
         $this->form->addFields( [new TLabel('Login de Acesso')], [$system_user_id] );
@@ -74,31 +77,28 @@ class TechnicianForm extends TPage
             $this->form->validate(); 
             $data = $this->form->getData(); 
             
-            // --- 🕵️‍♂️ LÓGICA DE DETETIVE ---
-            // Vamos descobrir o que veio e extrair o nome do arquivo na força
             
             $final_signature_name = null;
             $raw_value = $data->signature;
 
-            // CENÁRIO 1: É um array?
             if (is_array($raw_value)) {
                 $final_signature_name = $raw_value[0] ?? null;
             }
-            // CENÁRIO 2: É JSON string? (Ex: '["imagem.png"]')
+
             elseif (is_string($raw_value) && strpos($raw_value, '[') !== false) {
                 $decoded = json_decode($raw_value);
                 if (is_array($decoded)) {
                     $final_signature_name = $decoded[0] ?? null;
                 } else {
-                    $final_signature_name = $raw_value; // JSON falhou, usa a string toda
+                    $final_signature_name = $raw_value; 
                 }
             }
-            // CENÁRIO 3: É texto puro? (O cenário ideal)
+
             elseif (is_string($raw_value) && !empty($raw_value)) {
                 $final_signature_name = $raw_value;
             }
 
-            // Mover arquivo (Se tivermos um nome)
+
             if ($final_signature_name) {
                 $target_folder = 'files/signatures';
                 $target_path   = $target_folder . '/' . $final_signature_name;
@@ -113,8 +113,7 @@ class TechnicianForm extends TPage
             $object = new Technician; 
             $object->fromArray( (array) $data); 
             
-            // 🔥 AQUI É O PULO DO GATO:
-            // Forçamos a gravação do nome que encontramos, ignorando o resto.
+
             if ($final_signature_name) {
                 $object->signature = $final_signature_name;
             }
@@ -123,7 +122,7 @@ class TechnicianForm extends TPage
             $this->form->setData($object); 
             TTransaction::close(); 
             
-            // Mostra na tela qual nome de arquivo foi salvo para confirmarmos
+
             $msg = $final_signature_name ? "Arquivo salvo: $final_signature_name" : "Atenção: Assinatura vazia!";
             new TMessage('info', 'Registro Salvo! ' . $msg);
         }

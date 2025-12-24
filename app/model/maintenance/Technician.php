@@ -22,8 +22,6 @@ class Technician extends TRecord
         parent::addAttribute('specialty'); // Vi essa coluna no seu print do banco
         parent::addAttribute('active');
         parent::addAttribute('system_user_id');
-        
-        // ✅ ADICIONE ESTA LINHA AQUI:
         parent::addAttribute('signature'); 
     }
 
