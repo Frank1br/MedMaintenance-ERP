@@ -45,6 +45,11 @@
                 <icon>fas:user-md fa-fw</icon>
                 <action>TechnicianList</action>
             </menuitem>
+            
+            <menuitem label='Médicos'>
+                <icon>fas:user-nurse fa-fw</icon>
+                <action>DoctorList</action>
+            </menuitem>
         </menu>
     </menuitem>
 
