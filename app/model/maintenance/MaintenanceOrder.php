@@ -3,7 +3,7 @@ class MaintenanceOrder extends TRecord
 {
     const TABLENAME  = 'maintenance_orders';
     const PRIMARYKEY = 'id';
-    const IDPOLICY   =  'serial';
+    const IDPOLICY   =  'serial'; // Mantido conforme seu código atual
 
     private $asset;
     private $technician;
@@ -15,17 +15,19 @@ class MaintenanceOrder extends TRecord
         parent::addAttribute('technician_id');
         parent::addAttribute('title');
         parent::addAttribute('description');
-        parent::addAttribute('solution_notes');
+        parent::addAttribute('solution_notes'); // Campo antigo (se existir no form)
         parent::addAttribute('priority');
         parent::addAttribute('status');
         parent::addAttribute('opened_at');
         parent::addAttribute('closed_at');
         parent::addAttribute('system_version');
+        
+        // --- NOVO CAMPO ADICIONADO ---
+        parent::addAttribute('solution'); 
     }
 
     /**
      * Relacionamento: Pertence a um Equipamento (Asset)
-     * Permite usar: $os->asset->name na listagem
      */
     public function get_asset()
     {
@@ -36,18 +38,14 @@ class MaintenanceOrder extends TRecord
 
     /**
      * Relacionamento: Pertence a um Técnico (Technician)
-     * Permite usar: $os->technician->name na listagem
      */
     public function get_technician()
     {
-        // --- ATUALIZAÇÃO AQUI ---
-        // Se o ID do técnico estiver vazio (ainda não foi atribuído), 
-        // retornamos um objeto genérico para a Datagrid não dar erro e mostrar uma mensagem bonita.
+        // Se o ID do técnico estiver vazio, retorna objeto genérico para evitar erro
         if (empty($this->technician_id)) {
             return (object) ['name' => '<span style="color:gray; font-style:italic">Não atribuído</span>'];
         }
 
-        // Carregamento normal se tiver ID
         if (empty($this->technician))
             $this->technician = new Technician($this->technician_id);
             

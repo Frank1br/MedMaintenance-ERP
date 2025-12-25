@@ -1,7 +1,7 @@
 <?php
 /**
  * MaintenanceOrderForm
- * Formulário de Cadastro de OS (Com função onClear)
+ * Corrigido: Erro de BreadCrumb (Menu) e setPlaceholder removido
  */
 class MaintenanceOrderForm extends TPage
 {
@@ -23,32 +23,51 @@ class MaintenanceOrderForm extends TPage
         $priority->addItems(['BAIXA' => 'Baixa', 'MEDIA' => 'Média', 'ALTA' => 'Alta', 'URGENTE' => 'Urgente']);
         
         $status = new TCombo('status');
-        $status->addItems(['ABERTA' => 'Aberta', 'PENDENTE' => 'Pendente', 'FECHADA' => 'Fechada']);
+        $status->addItems(['ABERTA' => 'Aberta', 'EM ANDAMENTO' => 'Em Andamento', 'FECHADA' => 'Fechada']);
         
-        // Ajuste de altura do campo de texto
         $description = new TText('description');
-        $description->setSize('100%', 100); 
+        
+        // --- NOVO CAMPO: SOLUÇÃO ---
+        $solution = new TText('solution');
+        $solution->setSize('100%', 100);
+        // ---------------------------
 
-        $id->setEditable(FALSE);
+        $id->setEditable(false);
+        $asset_id->enableSearch();
+        $technician_id->enableSearch();
+
         $id->setSize('20%');
         $asset_id->setSize('100%');
         $technician_id->setSize('100%');
         $priority->setSize('100%');
         $status->setSize('100%');
+        $description->setSize('100%', 80);
 
         $this->form->addFields( [new TLabel('ID')], [$id] );
         $this->form->addFields( [new TLabel('Equipamento')], [$asset_id] );
         $this->form->addFields( [new TLabel('Técnico')], [$technician_id] );
         $this->form->addFields( [new TLabel('Prioridade')], [$priority], [new TLabel('Status')], [$status] );
         $this->form->addFields( [new TLabel('Descrição do Problema')], [$description] );
+        
+        // Adiciona o novo campo ao layout com destaque
+        $this->form->addFields( [new TLabel('Relatório Técnico / Solução Final:', '#007bff')] );
+        $this->form->addFields( [$solution] );
+
+        $asset_id->addValidation('Equipamento', new TRequiredValidator);
+        $priority->addValidation('Prioridade', new TRequiredValidator);
+        $status->addValidation('Status', new TRequiredValidator);
 
         $this->form->addAction('Salvar', new TAction([$this, 'onSave']), 'fa:save green');
         $this->form->addAction('Limpar', new TAction([$this, 'onClear']), 'fa:eraser red');
-        $this->form->addAction('Voltar', new TAction(['MaintenanceOrderList', 'onReload']), 'fa:arrow-left');
+        $this->form->addAction('Voltar', new TAction(['MaintenanceOrderList', 'onReload']), 'fa:arrow-left gray');
 
         $vbox = new TVBox;
         $vbox->style = 'width: 100%';
+        
+        // --- CORREÇÃO AQUI ---
+        // Apontamos para a LISTA (que existe no menu) em vez do formulário
         $vbox->add(new TXMLBreadCrumb('menu.xml', 'MaintenanceOrderList'));
+        
         $vbox->add($this->form);
         parent::add($vbox);
     }
@@ -61,11 +80,17 @@ class MaintenanceOrderForm extends TPage
             $data = $this->form->getData();
             $object = new MaintenanceOrder;
             $object->fromArray( (array) $data );
+            
+            if (empty($object->title)) {
+                $asset = new Asset($data->asset_id);
+                $object->title = 'OS - ' . $asset->name; 
+            }
+            
             $object->store();
             $data->id = $object->id;
             $this->form->setData($data);
             TTransaction::close();
-            new TMessage('info', 'Registro salvo com sucesso');
+            new TMessage('info', 'Registro salvo com sucesso!');
         } catch (Exception $e) {
             new TMessage('error', $e->getMessage());
             TTransaction::rollback();
@@ -84,11 +109,9 @@ class MaintenanceOrderForm extends TPage
             }
         } catch (Exception $e) {
             new TMessage('error', $e->getMessage());
-            TTransaction::rollback();
         }
     }
 
-    // ✅ A FUNÇÃO QUE FALTAVA
     public function onClear($param)
     {
         $this->form->clear(true);

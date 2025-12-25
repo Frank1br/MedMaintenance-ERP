@@ -187,8 +187,13 @@ class MaintenanceOrderList extends TPage
             // Verifica se tem técnico para exibir no PDF
             $tech_name = ($object->technician) ? $object->technician->name : 'Aguardando Atribuição';
 
-            // --- GERAÇÃO DO PDF (DOMPDF) ---
+    
+            
+            // --- GERAÇÃO DO PDF (DOMPDF ATUALIZADO) ---
             $pdf_path = "tmp/OS_{$key}.pdf";
+            
+            // Tratamento caso a solução esteja vazia
+            $solucao_texto = !empty($object->solution) ? nl2br($object->solution) : "<i>Nenhuma informação registrada pelo técnico.</i>";
             
             $html = "
             <html>
@@ -198,7 +203,8 @@ class MaintenanceOrderList extends TPage
                     h1 { color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
                     .label { font-weight: bold; color: #555; }
                     .box { background: #f9f9f9; padding: 10px; margin-bottom: 10px; border: 1px solid #ddd; }
-                    .alert { color: red; font-weight: bold; }
+                    .box-solution { background: #e8f4fd; padding: 10px; margin-bottom: 10px; border: 1px solid #b8daff; }
+                    h3 { margin-top: 20px; color: #444; }
                 </style>
             </head>
             <body>
@@ -212,9 +218,14 @@ class MaintenanceOrderList extends TPage
                     <p><span class='label'>Prioridade:</span> {$object->priority}</p>
                 </div>
                 
-                <h3>Descrição do Problema</h3>
+                <h3>Descrição do Problema (Solicitação)</h3>
                 <div class='box'>
                     " . nl2br($object->description) . "
+                </div>
+
+                <h3>Relatório Técnico (Solução Realizada)</h3>
+                <div class='box-solution'>
+                    " . $solucao_texto . "
                 </div>
                 
                 <br><br>
@@ -222,6 +233,8 @@ class MaintenanceOrderList extends TPage
                 <center><small>Documento gerado automaticamente pelo MedMaintenance ERP</small></center>
             </body>
             </html>";
+            
+   
 
             $dompdf = new \Dompdf\Dompdf();
             $dompdf->loadHtml($html);

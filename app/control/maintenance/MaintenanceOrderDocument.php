@@ -1,7 +1,7 @@
 <?php
 /**
  * MaintenanceOrderDocument
- * Gera PDF (Versão Final: Fundo Branco via Arquivo Temporário)
+ * Versão Final: Assinaturas Alinhadas pelo Topo
  */
 class MaintenanceOrderDocument extends TPage
 {
@@ -14,91 +14,188 @@ class MaintenanceOrderDocument extends TPage
     {
         try
         {
-            $key = $param['id'];
-            if (!$key) throw new Exception("ID não informado");
+            // Validação de ID
+            if (!isset($param['key'])) {
+                throw new Exception('ID da Ordem de Serviço não informado.');
+            }
+            $key = $param['key'];
 
             TTransaction::open('med_maintenance');
-            $object = new MaintenanceOrder($key);
-            $asset = new Asset($object->asset_id);
-            $technician = new Technician($object->technician_id);
 
-            // 1. Tratamento da Imagem da Assinatura
-            $signature_img = ''; 
-            
-            if (!empty($technician->signature)) {
-                // Caminho absoluto do arquivo PNG original (Transparente/Preto)
-                $full_path_png = getcwd() . '/files/signatures/' . $technician->signature;
+            $object = new MaintenanceOrder($key);
+            $asset_name = $object->asset->name;
+            $tech = $object->technician;
+            $tech_name = $tech ? $tech->name : 'Não atribuído';
+
+            // ============================================================
+            // 1. PROCESSAMENTO DA ASSINATURA (CAMINHOS ABSOLUTOS)
+            // ============================================================
+            $signature_html = ''; 
+            $root_path = getcwd();
+
+            if ($tech && !empty($tech->signature)) {
+                
+                $full_path_png = $root_path . "/files/signatures/{$tech->signature}";
                 
                 if (file_exists($full_path_png)) {
-                    
-                    // --- PROCESSAMENTO DA IMAGEM ---
-                    
-                    // a. Carrega o PNG original
                     $source_img = @imagecreatefrompng($full_path_png);
 
                     if ($source_img) {
                         $width = imagesx($source_img);
                         $height = imagesy($source_img);
 
-                        // b. Cria uma folha branca
                         $white_bg_img = imagecreatetruecolor($width, $height);
                         $white = imagecolorallocate($white_bg_img, 255, 255, 255);
                         imagefill($white_bg_img, 0, 0, $white);
 
-                        // c. Cola a assinatura em cima
                         imagecopy($white_bg_img, $source_img, 0, 0, 0, 0, $width, $height);
 
-                        // d. SALVA UM ARQUIVO TEMPORÁRIO JPG (Fundo Branco Forçado)
-                        // Usamos o ID da OS no nome para não misturar
                         $temp_jpg_name = "sig_fixed_{$key}.jpg";
-                        $temp_jpg_path = getcwd() . "/tmp/" . $temp_jpg_name;
+                        $temp_jpg_path = $root_path . "/tmp/" . $temp_jpg_name;
                         
                         imagejpeg($white_bg_img, $temp_jpg_path, 100);
-
-                        // e. Limpa a memória
                         imagedestroy($source_img);
                         imagedestroy($white_bg_img);
 
-                        // f. Aponta o HTML para esse arquivo temporário novo
                         if (file_exists($temp_jpg_path)) {
-                            $signature_img = "<img src='{$temp_jpg_path}' style='width: 150px; max-height: 80px; display: block; margin: 0 auto;'>";
+                            $signature_html = "<img src='{$temp_jpg_path}' style='width: 150px; max-height: 80px;'>";
                         }
                     } else {
-                         // Fallback: Se der erro na conversão, usa a original mesmo com fundo preto
-                         $signature_img = "<img src='{$full_path_png}' style='width: 150px; max-height: 80px; display: block; margin: 0 auto;'>";
+                        $signature_html = "<img src='{$full_path_png}' style='width: 150px; max-height: 80px;'>";
                     }
                 }
             }
-            
-            // 2. Substituições
-            $replaces = [];
-            $replaces['{$id}'] = $object->id;
-            $replaces['{$asset_name}'] = $asset->name;
-            $replaces['{$asset_serial}'] = $asset->serial ?? 'N/A';
-            $replaces['{$technician_name}'] = $technician->name;
-            $replaces['{$created_at}'] = TDate::date2br($object->created_at);
-            $replaces['{$status}'] = $object->status;
-            $replaces['{$priority}'] = $object->priority;
-            $replaces['{$description}'] = nl2br($object->description);
-            $replaces['{$print_date}'] = date('d/m/Y H:i');
-            
-            $replaces['{$signature_img}'] = $signature_img;
+
+            // ============================================================
+            // 2. PROCESSAMENTO DO RELATÓRIO TÉCNICO
+            // ============================================================
+            $solution_text = !empty($object->solution) 
+                ? nl2br($object->solution) 
+                : "<i>Nenhuma solução registrada pelo técnico.</i>";
+
+            $date_open = !empty($object->opened_at) ? TDate::date2br($object->opened_at) : date('d/m/Y');
+
+            // ============================================================
+            // 3. GERAÇÃO DO HTML (CSS Ajustado)
+            // ============================================================
+            $html = "
+            <html>
+            <head>
+                <style>
+                    body { font-family: Arial, sans-serif; font-size: 11pt; color: #333; }
+                    .header { width: 100%; border-bottom: 2px solid #007bff; margin-bottom: 20px; padding-bottom: 10px; }
+                    .title { float: right; font-weight: bold; color: #555; }
+                    .brand { float: left; font-weight: bold; font-size: 14pt; }
+                    
+                    .section-title { 
+                        background-color: #f0f0f0; 
+                        border-left: 5px solid #007bff; 
+                        padding: 5px 10px; 
+                        margin-top: 20px; 
+                        margin-bottom: 10px; 
+                        font-weight: bold; 
+                        text-transform: uppercase; 
+                        font-size: 10pt;
+                    }
+                    
+                    .data-row { margin-bottom: 5px; }
+                    .label { font-weight: bold; width: 150px; display: inline-block; }
+                    
+                    .box-text { 
+                        border: 1px solid #ddd; padding: 10px; background: #fdfdfd; min-height: 60px; text-align: justify;
+                    }
+
+                    .box-solution { 
+                        border: 1px solid #b8daff; padding: 10px; background: #e8f4fd; min-height: 60px; text-align: justify; color: #004085;
+                    }
+
+                    /* --- AJUSTE DE ALINHAMENTO --- */
+                    .signatures { margin-top: 60px; width: 100%; text-align: center; }
+                    
+                    /* vertical-align: top garante que os blocos comecem na mesma altura */
+                    .sign-block { display: inline-block; width: 45%; vertical-align: top; }
+                    
+                    .sign-line { border-top: 1px solid #000; width: 80%; margin: 0 auto; padding-top: 5px; font-size: 9pt; }
+                    
+                    /* Altura fixa para a área da imagem garante que a linha comece no mesmo ponto */
+                    .sign-img-container { height: 90px; margin-bottom: 5px; text-align: center; display: block; }
+                    
+                    .footer { margin-top: 50px; font-size: 8pt; text-align: center; color: #999; }
+                </style>
+            </head>
+            <body>
+                <div class='header'>
+                    <span class='brand'>MedMaintenance ERP</span>
+                    <span class='title'>Ordem de Serviço #{$object->id}</span>
+                    <div style='clear:both'></div>
+                </div>
+
+                <div class='section-title'>Dados Gerais</div>
+                <div class='data-row'><span class='label'>Equipamento:</span> {$asset_name}</div>
+                <div class='data-row'><span class='label'>Técnico Responsável:</span> {$tech_name}</div>
+                <div class='data-row'><span class='label'>Data de Abertura:</span> {$date_open}</div>
+                <div class='data-row'><span class='label'>Status:</span> <b>{$object->status}</b> (Prioridade: {$object->priority})</div>
+
+                <div class='section-title'>Descrição do Problema</div>
+                <div class='box-text'>
+                    " . nl2br($object->description) . "
+                </div>
+
+                <div class='section-title' style='border-left-color: #28a745;'>Relatório Técnico / Solução</div>
+                <div class='box-solution'>
+                    {$solution_text}
+                </div>
+
+                <div class='signatures'>
+                    <div class='sign-block'>
+                        <div class='sign-img-container'>
+                            {$signature_html}
+                        </div>
+                        <div class='sign-line'>
+                            Assinatura do Técnico<br>
+                            <b>{$tech_name}</b>
+                        </div>
+                    </div>
+
+                    <div class='sign-block'>
+                        <div class='sign-img-container'>
+                             </div>
+                        <div class='sign-line'>
+                            Assinatura do Responsável (Setor)
+                        </div>
+                    </div>
+                </div>
+
+                <div class='footer'>
+                    Documento gerado automaticamente em " . date('d/m/Y H:i') . "
+                </div>
+            </body>
+            </html>";
+
+            // ============================================================
+            // 4. RENDERIZAÇÃO
+            // ============================================================
+            $options = new \Dompdf\Options();
+            $options->set('isRemoteEnabled', true);
+            $options->set('chroot', $root_path);
+
+            $dompdf = new \Dompdf\Dompdf($options);
+            $dompdf->loadHtml($html);
+            $dompdf->setPaper('A4', 'portrait');
+            $dompdf->render();
+
+            $file = "tmp/os_{$object->id}.pdf";
+            file_put_contents($file, $dompdf->output());
+
+            $window = TWindow::create('Ordem de Serviço', 0.8, 0.8);
+            $object = new TElement('object');
+            $object->data  = $file;
+            $object->type  = 'application/pdf';
+            $object->style = "width: 100%; height:calc(100% - 10px)";
+            $window->add($object);
+            $window->show();
 
             TTransaction::close();
-
-            // 3. Geração do PDF
-            $html_file = 'app/resources/maintenance_order.html';
-            $content = file_get_contents($html_file);
-            $content = str_replace(array_keys($replaces), array_values($replaces), $content);
-
-            $temp_html = "tmp/os_{$key}.html";
-            file_put_contents($temp_html, $content);
-
-            $pdf_file = "tmp/os_{$key}.pdf";
-            $parser = new AdiantiHTMLDocumentParser($temp_html);
-            $parser->saveAsPDF($pdf_file);
-
-            parent::openFile($pdf_file);
         }
         catch (Exception $e)
         {
