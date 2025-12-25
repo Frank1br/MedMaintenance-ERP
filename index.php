@@ -1,22 +1,20 @@
 <?php
+require_once 'init.php';
+
 // --- CONFIGURAÇÃO DA LANDING PAGE ---
-// Se não houver parâmetros na URL (acesso direto à raiz), mostra o home.html
+// Se acesso direto à raiz (sem classe), mostra home.html
 if (empty($_GET) && empty($_POST)) {
     if (file_exists('home.html')) {
         echo file_get_contents('home.html');
-        exit; // Interrompe o carregamento do Adianti aqui
+        exit; 
     }
 }
 // ------------------------------------
-
-require_once 'init.php';
 
 $ini = AdiantiApplicationConfig::get();
 $theme  = $ini['general']['theme'];
 $class  = isset($_REQUEST['class']) ? $_REQUEST['class'] : '';
 $public = in_array($class, !empty($ini['permission']['public_classes']) ? $ini['permission']['public_classes'] : []);
-
-// AdiantiCoreApplication::setRouter(array('AdiantiRouteTranslator', 'translate'));
 
 new TSession;
 ApplicationAuthenticationService::checkMultiSession();
@@ -31,7 +29,33 @@ if ( TSession::getValue('logged') )
     else
     {
         $content = file_get_contents("app/templates/{$theme}/layout.html");
-        $content = str_replace('{MENU}', AdiantiMenuBuilder::parse('menu.xml', $theme), $content);
+        
+        // ============================================================
+        // LÓGICA DE TROCA DE MENU (ADMIN vs MÉDICO)
+        // ============================================================
+        $menu_file = 'menu.xml'; // Padrão (Admin, Técnicos, etc)
+        
+        $user_groups = TSession::getValue('usergroup_ids');
+        $id_grupo_medico = 5; // ID Confirmado do grupo Médicos
+
+        if (!empty($user_groups) && is_array($user_groups)) {
+            // Normaliza o array para buscar tanto na chave quanto no valor
+            // Isso resolve o problema de array(5 => 5) ou array(0 => 5)
+            $todos_ids = [];
+            foreach($user_groups as $key => $val) {
+                $todos_ids[] = $key;
+                $todos_ids[] = $val;
+            }
+            
+            // Verifica se o ID 5 está presente
+            if (in_array($id_grupo_medico, $todos_ids)) {
+                $menu_file = 'menu-medic.xml';
+            }
+        }
+        // ============================================================
+
+        // Parseia o menu escolhido acima
+        $content = str_replace('{MENU}', AdiantiMenuBuilder::parse($menu_file, $theme), $content);
         $content = str_replace('{MENUTOP}', AdiantiMenuBuilder::parseNavBar('menu-top.xml', $theme), $content);
         $content = str_replace('{MENUBOTTOM}', AdiantiMenuBuilder::parseNavBar('menu-bottom.xml', $theme), $content);
     }
