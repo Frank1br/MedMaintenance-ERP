@@ -4,6 +4,11 @@
         <action>MaintenanceDashboard</action>
     </menuitem>
 
+    <menuitem label='Solicitar'>
+        <icon>fa:bullhorn fa-fw</icon>
+        <action>MaintenanceRequestForm</action>
+    </menuitem>
+
     <menuitem label='Minhas OS'>
         <icon>fas:clipboard-list fa-fw</icon>
         <action>MaintenanceOrderList</action>

@@ -11,6 +11,12 @@
                 <icon>fas:file-medical-alt fa-fw</icon>
                 <action>MaintenanceOrderList</action>
             </menuitem>
+
+             <menuitem label='Solicitar Manutenção'>
+                <icon>fa:bullhorn fa-fw</icon>
+                <action>MaintenanceRequestForm</action>
+            </menuitem>
+
             <menuitem label='Histórico Geral'>
                 <icon>fas:history fa-fw</icon>
                 <action>AssetList</action>
@@ -27,7 +33,8 @@
             </menuitem>
             <menuitem label='Categorias'>
                 <icon>fas:tags fa-fw</icon>
-                <action>SystemPage</action> </menuitem>
+                <action>SystemPage</action> 
+            </menuitem>
         </menu>
     </menuitem>
 
@@ -57,7 +64,6 @@
                 <icon>fas:university fa-fw</icon>
                 <action>SystemUnitList</action>
             </menuitem>
-
             
             <menuitem label='Programas'>
                 <icon>far:file-code fa-fw</icon>

@@ -1,7 +1,7 @@
 <?php
 /**
  * MaintenanceOrderList
- * Versão Final Compatível: API RESEND + Correção de Versão (Sem setPlaceholder)
+ * Versão Completa: Portal do Solicitante (Visualização) + Resend API + Dompdf
  */
 class MaintenanceOrderList extends TPage
 {
@@ -22,7 +22,7 @@ class MaintenanceOrderList extends TPage
 
         // 1. FORMULÁRIO DE BUSCA
         $this->form = new BootstrapFormBuilder(self::$formName);
-        $this->form->setFormTitle('Ordens de Serviço');
+        $this->form->setFormTitle('Ordens de Serviço (Gestão)');
 
         $title = new TEntry('title');
         $status = new TCombo('status');
@@ -32,16 +32,17 @@ class MaintenanceOrderList extends TPage
         $this->form->addFields( [new TLabel('Status')], [$status] );
 
         $this->form->addAction('Buscar', new TAction([$this, 'onSearch']), 'fa:search blue');
-        $this->form->addAction('Nova OS', new TAction(['MaintenanceOrderForm', 'onClear']), 'fa:plus green');
+        // Botão para criar nova OS manualmente (Visão do Técnico/Admin)
+        $this->form->addAction('Nova OS Interna', new TAction(['MaintenanceOrderForm', 'onClear']), 'fa:plus green');
 
         // 2. DATAGRID
         $this->datagrid = new BootstrapDatagridWrapper(new TDataGrid);
         $this->datagrid->width = '100%';
         $this->datagrid->datatable = 'false';
 
-        // 3. AÇÕES INDIVIDUAIS
+        // 3. AÇÕES INDIVIDUAIS (PREPARAÇÃO)
         $action_edit = new TDataGridAction(['MaintenanceOrderForm', 'onEdit']);
-        $action_edit->setLabel('Editar Cadastro');
+        $action_edit->setLabel('Editar / Atribuir Técnico');
         $action_edit->setImage('fa:edit blue');
         $action_edit->setField(self::$primaryKey);
 
@@ -60,9 +61,9 @@ class MaintenanceOrderList extends TPage
         $action_del->setImage('fa:trash red');
         $action_del->setField(self::$primaryKey);
 
-        // 4. MENU DROP-DOWN
+        // 4. MENU DROP-DOWN (OPÇÕES)
         $action_group = new TDataGridActionGroup('Opções', 'fa:th');
-        $action_group->addHeader('Ações da OS');
+        $action_group->addHeader('Gerenciar OS');
         $action_group->addAction($action_edit);
         $action_group->addAction($action_pdf);
         $action_group->addAction($action_email);
@@ -71,10 +72,24 @@ class MaintenanceOrderList extends TPage
 
         $this->datagrid->addActionGroup($action_group);
 
-        // 5. COLUNAS
+        // 5. COLUNAS (COM A NOVA LÓGICA DE TRIAGEM)
         $col_id = new TDataGridColumn('id', 'ID', 'center', '5%');
         $col_asset = new TDataGridColumn('{asset->name}', 'Equipamento', 'left', '25%');
-        $col_tech = new TDataGridColumn('{technician->name}', 'Técnico', 'left', '25%');
+        
+        // --- MUDANÇA AQUI: Coluna Técnico com Transformer ---
+        $col_tech = new TDataGridColumn('technician_id', 'Técnico', 'left', '25%');
+        
+        $col_tech->setTransformer(function($value, $object, $row) {
+            // Se existir um ID de técnico e o objeto técnico for carregado
+            if (!empty($value) && $object->technician) {
+                return $object->technician->name;
+            } else {
+                // Se estiver vazio (vinda do Portal do Solicitante)
+                return "<span class='label label-warning' style='font-size:11px; padding: 4px;'><i class='fa fa-exclamation-triangle'></i> A TRIAR</span>";
+            }
+        });
+        // ----------------------------------------------------
+
         $col_status = new TDataGridColumn('status', 'Status', 'center', '15%');
         $col_priority = new TDataGridColumn('priority', 'Prioridade', 'center', '15%');
 
@@ -115,8 +130,13 @@ class MaintenanceOrderList extends TPage
             
             TTransaction::open(self::$database);
             $order = new MaintenanceOrder($key);
-            $technician = new Technician($order->technician_id);
-            $suggested_email = $technician->email; 
+            
+            // Lógica para pegar email: se tem técnico, pega dele. Se não, deixa vazio.
+            $suggested_email = '';
+            if ($order->technician_id) {
+                $technician = new Technician($order->technician_id);
+                $suggested_email = $technician->email; 
+            }
             TTransaction::close();
 
             $form = new BootstrapFormBuilder('form_email_popup');
@@ -125,7 +145,7 @@ class MaintenanceOrderList extends TPage
             $email_dest->setValue($suggested_email); 
             $email_dest->setSize('100%');
             
-            // Adicionamos a dica como um Label vermelho para chamar atenção
+            // Dica visual sobre o plano grátis
             $lbl_info = new TLabel('Nota: No plano grátis Resend, envie apenas para seu e-mail de cadastro.');
             $lbl_info->setFontColor('red');
             $lbl_info->setFontSize(10);
@@ -147,7 +167,7 @@ class MaintenanceOrderList extends TPage
     }
 
     /**
-     * Passo 2: Disparo via RESEND API (Com PDF Corrigido via Dompdf)
+     * Passo 2: Disparo via RESEND API (Com Dompdf e cURL)
      */
     public function sendEmailNow($param)
     {
@@ -163,12 +183,13 @@ class MaintenanceOrderList extends TPage
             TTransaction::open(self::$database);
             $object = new MaintenanceOrder($key);
             $asset = new Asset($object->asset_id);
-            $technician = new Technician($object->technician_id);
+            
+            // Verifica se tem técnico para exibir no PDF
+            $tech_name = ($object->technician) ? $object->technician->name : 'Aguardando Atribuição';
 
-            // --- GERAÇÃO DO PDF (MÉTODO DOMPDF PURO) ---
+            // --- GERAÇÃO DO PDF (DOMPDF) ---
             $pdf_path = "tmp/OS_{$key}.pdf";
             
-            // HTML simples e direto para garantir que não quebre
             $html = "
             <html>
             <head>
@@ -177,6 +198,7 @@ class MaintenanceOrderList extends TPage
                     h1 { color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
                     .label { font-weight: bold; color: #555; }
                     .box { background: #f9f9f9; padding: 10px; margin-bottom: 10px; border: 1px solid #ddd; }
+                    .alert { color: red; font-weight: bold; }
                 </style>
             </head>
             <body>
@@ -185,7 +207,7 @@ class MaintenanceOrderList extends TPage
                 
                 <div class='box'>
                     <p><span class='label'>Equipamento:</span> {$asset->name}</p>
-                    <p><span class='label'>Técnico Responsável:</span> {$technician->name}</p>
+                    <p><span class='label'>Técnico Responsável:</span> {$tech_name}</p>
                     <p><span class='label'>Status Atual:</span> {$object->status}</p>
                     <p><span class='label'>Prioridade:</span> {$object->priority}</p>
                 </div>
@@ -201,26 +223,22 @@ class MaintenanceOrderList extends TPage
             </body>
             </html>";
 
-            // Usamos a classe Dompdf diretamente para evitar dependência do wkhtmltopdf
             $dompdf = new \Dompdf\Dompdf();
             $dompdf->loadHtml($html);
             $dompdf->setPaper('A4', 'portrait');
             $dompdf->render();
             
-            // Salva o arquivo
             file_put_contents($pdf_path, $dompdf->output());
             
-            // Verifica se o arquivo foi realmente criado e tem conteúdo
             if (!file_exists($pdf_path) || filesize($pdf_path) < 100) {
-                throw new Exception("Falha ao gerar o arquivo PDF. Verifique as permissões da pasta tmp/.");
+                throw new Exception("Falha ao gerar PDF.");
             }
             TTransaction::close();
 
-            // Prepara o Anexo em Base64
             $pdf_content = file_get_contents($pdf_path);
             $pdf_base64 = base64_encode($pdf_content);
 
-            // --- ENVIO VIA RESEND API ---
+            // --- ENVIO VIA API (cURL) ---
             $url = "https://api.resend.com/emails";
             
             $data = [
@@ -249,12 +267,13 @@ class MaintenanceOrderList extends TPage
             $response = curl_exec($ch);
             $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             
-            if (curl_errno($ch)) {
-                throw new Exception('Erro cURL: ' . curl_error($ch));
-            }
+            if (curl_errno($ch)) { throw new Exception('Erro cURL: ' . curl_error($ch)); }
             curl_close($ch);
 
             if ($http_code >= 200 && $http_code < 300) {
+                // Limpeza Automática do arquivo temporário
+                if (file_exists($pdf_path)) { unlink($pdf_path); }
+                
                 TWindow::closeWindow();
                 new TMessage('info', "Sucesso! Enviado via Resend para: <b>$dest_email</b>");
             } else {

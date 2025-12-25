@@ -11,6 +11,12 @@
                 <icon>fas:file-medical-alt fa-fw</icon>
                 <action>MaintenanceOrderList</action>
             </menuitem>
+            
+            <menuitem label='Solicitar Manutenção'>
+                <icon>fa:bullhorn fa-fw</icon>
+                <action>MaintenanceRequestForm</action>
+            </menuitem>
+
             <menuitem label='Histórico Geral'>
                 <icon>fas:history fa-fw</icon>
                 <action>AssetList</action>
