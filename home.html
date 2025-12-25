@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MedMaintenance - Gestão de Engenharia Clínica</title>
+    <link rel="shortcut icon" href="favicon.png" type="image/png">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .glass {
+            background: rgba(255, 255, 255, 0.85); /* Mais opacidade no mobile para leitura */
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .anim-up { animation: fadeInUp 0.8s ease-out; }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 overflow-x-hidden">
+
+    <nav class="fixed w-full z-50 glass shadow-sm transition-all duration-300">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16 md:h-20">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 md:w-10 md:h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-lg md:text-xl shadow-lg shrink-0">
+                        <i class="fas fa-heartbeat"></i>
+                    </div>
+                    <span class="font-bold text-lg md:text-xl tracking-tight text-slate-800 leading-tight">
+                        Med<span class="text-blue-600">Maintenance</span>
+                    </span>
+                </div>
+
+                <div>
+                    <a href="index.php?class=LoginForm" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 md:py-2.5 md:px-6 rounded-full transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 text-sm md:text-base flex items-center gap-2">
+                        <span class="inline md:hidden">Entrar</span>
+                        <span class="hidden md:inline">Acessar Sistema</span>
+                        <i class="fas fa-sign-in-alt"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <section class="relative pt-28 pb-16 md:pt-48 md:pb-32 overflow-hidden">
+        <div class="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 md:w-96 md:h-96 bg-blue-100 rounded-full opacity-50 blur-3xl"></div>
+        <div class="absolute bottom-0 left-0 -ml-20 -mb-20 w-64 h-64 md:w-80 md:h-80 bg-teal-100 rounded-full opacity-50 blur-3xl"></div>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+            <div class="anim-up">
+                <span class="inline-block py-1 px-3 rounded-full bg-blue-50 text-blue-600 text-xs md:text-sm font-semibold mb-4 md:mb-6 border border-blue-100">
+                    🚀 Versão 2.0 Disponível
+                </span>
+                
+                <h1 class="text-4xl md:text-6xl font-extrabold text-slate-900 tracking-tight mb-4 md:mb-6 leading-tight">
+                    Gestão Inteligente para <br class="hidden md:block">
+                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-teal-500">Engenharia Clínica</span>
+                </h1>
+                
+                <p class="mt-2 md:mt-4 text-base md:text-xl text-slate-600 max-w-2xl mx-auto mb-8 md:mb-10 px-2">
+                    Garanta a disponibilidade dos equipamentos médicos, reduza custos e aumente a segurança dos pacientes com o MedMaintenance ERP.
+                </p>
+                
+                <div class="flex flex-col md:flex-row justify-center gap-3 md:gap-4 px-4">
+                    <a href="index.php?class=LoginForm" class="bg-slate-900 text-white py-3 md:py-4 px-8 rounded-xl font-bold hover:bg-slate-800 transition-all shadow-xl hover:shadow-2xl text-base md:text-lg flex items-center justify-center">
+                        <i class="fas fa-sign-in-alt mr-2"></i> Entrar na Plataforma
+                    </a>
+                    <a href="#features" class="bg-white text-slate-700 border border-slate-200 py-3 md:py-4 px-8 rounded-xl font-bold hover:bg-slate-50 transition-all shadow-sm hover:shadow-md text-base md:text-lg text-center">
+                        Saiba Mais
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="features" class="py-16 md:py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-10 md:mb-16">
+                <h2 class="text-2xl md:text-3xl font-bold text-slate-900">Tudo o que seu hospital precisa</h2>
+                <p class="mt-2 md:mt-4 text-base md:text-lg text-slate-500">Controle total do ciclo de vida dos ativos hospitalares.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+                <div class="p-6 md:p-8 rounded-2xl border border-slate-100 shadow-xl shadow-slate-200/50 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 bg-white group">
+                    <div class="w-12 h-12 md:w-14 md:h-14 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 text-xl md:text-2xl mb-4 md:mb-6 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                        <i class="fas fa-stethoscope"></i>
+                    </div>
+                    <h3 class="text-lg md:text-xl font-bold text-slate-800 mb-2 md:mb-3">Inventário de Ativos</h3>
+                    <p class="text-sm md:text-base text-slate-500">Cadastro detalhado de equipamentos com histórico completo de manutenções.</p>
+                </div>
+
+                <div class="p-6 md:p-8 rounded-2xl border border-slate-100 shadow-xl shadow-slate-200/50 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 bg-white group">
+                    <div class="w-12 h-12 md:w-14 md:h-14 bg-teal-50 rounded-xl flex items-center justify-center text-teal-600 text-xl md:text-2xl mb-4 md:mb-6 group-hover:bg-teal-600 group-hover:text-white transition-colors">
+                        <i class="fas fa-wrench"></i>
+                    </div>
+                    <h3 class="text-lg md:text-xl font-bold text-slate-800 mb-2 md:mb-3">Ordens de Serviço</h3>
+                    <p class="text-sm md:text-base text-slate-500">Fluxo automatizado de abertura, atendimento e laudos digitais.</p>
+                </div>
+
+                <div class="p-6 md:p-8 rounded-2xl border border-slate-100 shadow-xl shadow-slate-200/50 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 bg-white group">
+                    <div class="w-12 h-12 md:w-14 md:h-14 bg-purple-50 rounded-xl flex items-center justify-center text-purple-600 text-xl md:text-2xl mb-4 md:mb-6 group-hover:bg-purple-600 group-hover:text-white transition-colors">
+                        <i class="fas fa-user-md"></i>
+                    </div>
+                    <h3 class="text-lg md:text-xl font-bold text-slate-800 mb-2 md:mb-3">Portal do Médico</h3>
+                    <p class="text-sm md:text-base text-slate-500">Interface simplificada para o corpo clínico solicitar reparos.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="bg-slate-900 text-slate-400 py-8 md:py-12">
+        <div class="max-w-7xl mx-auto px-4 text-center">
+            <div class="flex justify-center items-center gap-2 mb-4 text-white text-xl md:text-2xl font-bold">
+                <i class="fas fa-heartbeat text-blue-500"></i> MedMaintenance
+            </div>
+            <p class="mb-6 md:mb-8 text-sm md:text-base">Tecnologia a serviço da vida.</p>
+            <div class="border-t border-slate-800 pt-6 md:pt-8 text-xs md:text-sm">
+                &copy; 2025 MedMaintenance ERP.
+            </div>
+        </div>
+    </footer>
+
+</body>
+</html>

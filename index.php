@@ -1,4 +1,14 @@
 <?php
+// --- CONFIGURAÇÃO DA LANDING PAGE ---
+// Se não houver parâmetros na URL (acesso direto à raiz), mostra o home.html
+if (empty($_GET) && empty($_POST)) {
+    if (file_exists('home.html')) {
+        echo file_get_contents('home.html');
+        exit; // Interrompe o carregamento do Adianti aqui
+    }
+}
+// ------------------------------------
+
 require_once 'init.php';
 
 $ini = AdiantiApplicationConfig::get();
